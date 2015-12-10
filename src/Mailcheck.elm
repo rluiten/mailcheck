@@ -1,6 +1,5 @@
 module Mailcheck
-    ( Mailcheck(Suggestion, NoSuggestion)
-    , suggest
+    ( suggest
     , suggestWith
     , findClosestDomain
     , splitEmail
@@ -30,13 +29,10 @@ Running
 
 Returns
 
-    NoSuggestion
+    Nothing
 
 # Create
 @docs suggest
-
-# Return
-@docs Mailcheck
 
 # Utility
 @docs encodeEmail
@@ -56,6 +52,11 @@ import Regex
 import String
 
 import StringDistance exposing (sift3Distance)
+
+
+{- Convenient alias for the result -}
+type alias Mailcheck = Maybe (String, String, String)
+
 
 {-| Suggest a domain which may assist a user with a possible error
 in a candidate email address. This version uses the default internal lists
@@ -94,7 +95,7 @@ suggestWith domains secondLevelDomains topLevelDomains email =
       splitEmail' = splitEmail(String.toLower email)
     in
       case splitEmail' of
-        Nothing -> NoSuggestion
+        Nothing -> Nothing
         Just (address', domain', secondLevelDomain', topLevelDomain') ->
           suggestWith' domains secondLevelDomains topLevelDomains address' domain' secondLevelDomain' topLevelDomain'
 
@@ -108,7 +109,7 @@ suggestWith'
   -> Mailcheck
 suggestWith' domains secondLevelDomains topLevelDomains address domain sld tld =
     if  (List.member sld secondLevelDomains) && (List.member tld topLevelDomains) then
-        NoSuggestion
+        Nothing
 
     else
       let
@@ -119,10 +120,10 @@ suggestWith' domains secondLevelDomains topLevelDomains address domain sld tld =
             buildSuggest topLevelDomains secondLevelDomains address domain tld sld
           Just (closestDomain) ->
             if domain == closestDomain then
-              NoSuggestion
+              Nothing
 
             else
-              Suggestion (address, closestDomain, address ++ "@" ++ closestDomain)
+              Just (address, closestDomain, address ++ "@" ++ closestDomain)
 
 
 buildSuggest topLevelDomains secondLevelDomains address domain tld sld =
@@ -141,10 +142,10 @@ buildSuggest topLevelDomains secondLevelDomains address domain tld sld =
           (Just closestSld, Just closestTld) -> closestSld ++ "." ++ closestTld
     in
       if suggestedDomain == domain then
-        NoSuggestion
+        Nothing
 
       else
-        Suggestion (address, suggestedDomain, address ++ "@" ++ suggestedDomain)
+        Just (address, suggestedDomain, address ++ "@" ++ suggestedDomain)
 
 {-| Split an email address up into components.
 This is exported to test it.
@@ -192,14 +193,6 @@ splitDomain address domain =
         secondLevelDomain :: restDomains ->
           let topLevelDomain = String.join "." restDomains
           in  Just (address, domain, secondLevelDomain, topLevelDomain)
-
-
-{-| A Mailcheck suggestion.
-Suggestion values are address, domain, full as per original mailcheck.js.
--}
-type Mailcheck
-    = Suggestion (String, String, String)
-    | NoSuggestion
 
 
 {-| default list of domains used in suggest -}

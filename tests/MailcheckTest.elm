@@ -4,8 +4,7 @@ import String
 
 import ElmTest exposing (..)
 import Mailcheck exposing
-    ( Mailcheck(Suggestion, NoSuggestion)
-    , findClosestDomain
+    ( findClosestDomain
     , splitEmail
     , encodeEmail
     , suggest
@@ -15,6 +14,9 @@ import Mailcheck exposing
 domains = ["google.com", "gmail.com", "emaildomain.com", "comcast.net", "facebook.com", "msn.com", "gmx.de"]
 topLevelDomains = ["co.uk", "com", "org", "info", "fr"]
 secondLevelDomains = ["yahoo", "hotmail", "mail", "live", "outlook", "gmx"]
+
+
+type alias Mailcheck = Maybe (String, String, String)
 
 
 tests : Test
@@ -272,156 +274,156 @@ suggestionData =
   [ AnonSuggestCase
       ( suggest
       , "test@gmail.co"
-      , Suggestion ("test", "gmail.com", "test@gmail.com") )
+      , Just ("test", "gmail.com", "test@gmail.com") )
   , NamedSuggestCase
       ( "takes in an array of specified domains"
       , suggestWith domains [] []
       , "test@emaildomain.con"
-      , Suggestion ("test", "emaildomain.com", "test@emaildomain.com")
+      , Just ("test", "emaildomain.com", "test@emaildomain.com")
       )
   , NamedSuggestCase
       ( "domain not close to any domain in default domain list test@emaildomain.con but tld found"
       , suggest
       , "test@emaildomain.con"
-      , Suggestion ("test", "emaildomain.co.nz", "test@emaildomain.co.nz")
+      , Just ("test", "emaildomain.co.nz", "test@emaildomain.co.nz")
       )
   , NamedSuggestCase
       ( "custom domain list is near to misspelled domain"
       , suggestWith domains [] []
       , "test@xmaildomain.con"
-      , Suggestion ("test", "emaildomain.com", "test@emaildomain.com")
+      , Just ("test", "emaildomain.com", "test@emaildomain.com")
       )
   , AnonSuggestCase
       ( suggest
       , "contact@kicksend.com"
-      , NoSuggestion )
+      , Nothing )
   , NamedSuggestCase
       ( "no suggestion if incomplete email provided"
       , suggest
       , "contact"
-      , NoSuggestion
+      , Nothing
       )
   , AnonSuggestCase
       ( suggest
       , "test@gmailc.om"
-      , Suggestion ("test", "gmail.com", "test@gmail.com")
+      , Just ("test", "gmail.com", "test@gmail.com")
       )
   , AnonSuggestCase
       ( suggestWith domains [] []
       , "test@emaildomain.co"
-      , Suggestion ("test", "emaildomain.com", "test@emaildomain.com")
+      , Just ("test", "emaildomain.com", "test@emaildomain.com")
       )
   , AnonSuggestCase
       ( suggestWith domains [] []
       , "test@gnail.con"
-      , Suggestion ("test", "gmail.com", "test@gmail.com")
+      , Just ("test", "gmail.com", "test@gmail.com")
       )
   , AnonSuggestCase
       ( suggestWith domains [] []
       , "test@gsnail.con"
-      , NoSuggestion
+      , Nothing
       )
   , AnonSuggestCase
       ( suggestWith domains [] []
       , "test@GNAIL.con"
-      , Suggestion ("test", "gmail.com", "test@gmail.com")
+      , Just ("test", "gmail.com", "test@gmail.com")
       )
   , AnonSuggestCase
       ( suggestWith domains [] []
       , "test@#gmail.com"
-      , Suggestion ("test", "gmail.com", "test@gmail.com")
+      , Just ("test", "gmail.com", "test@gmail.com")
       )
   , AnonSuggestCase
       ( suggestWith domains [] []
       , "test@comcast.nry"
-      , Suggestion ("test", "comcast.net", "test@comcast.net")
+      , Just ("test", "comcast.net", "test@comcast.net")
       )
 
   , AnonSuggestCase
       ( suggestWith domains secondLevelDomains topLevelDomains
       , "test@homail.con"
-      , Suggestion ("test", "hotmail.com", "test@hotmail.com")
+      , Just ("test", "hotmail.com", "test@hotmail.com")
       )
   , AnonSuggestCase
       ( suggestWith domains secondLevelDomains topLevelDomains
       , "test@hotmail.co"
-      , Suggestion ("test", "hotmail.com", "test@hotmail.com")
+      , Just ("test", "hotmail.com", "test@hotmail.com")
       )
   , AnonSuggestCase
       ( suggestWith domains secondLevelDomains topLevelDomains
       , "test@yajoo.com"
-      , Suggestion ("test", "yahoo.com", "test@yahoo.com")
+      , Just ("test", "yahoo.com", "test@yahoo.com")
       )
   , AnonSuggestCase
       ( suggestWith domains secondLevelDomains topLevelDomains
       , "test@randomsmallcompany.cmo"
-      , Suggestion ("test", "randomsmallcompany.com", "test@randomsmallcompany.com")
+      , Just ("test", "randomsmallcompany.com", "test@randomsmallcompany.com")
       )
 
   , NamedSuggestCase
       ( "empty email address produces NoSuggestion"
       , suggestWith domains secondLevelDomains topLevelDomains
       , ""
-      , NoSuggestion
+      , Nothing
       )
   , NamedSuggestCase
       ( "missing email address domain produces NoSuggestion"
       , suggestWith domains secondLevelDomains topLevelDomains
       , "test@"
-      , NoSuggestion
+      , Nothing
       )
   , NamedSuggestCase
       ( "not @ or domain in email produces NoSuggestion"
       , suggestWith domains secondLevelDomains topLevelDomains
       , "test@"
-      , NoSuggestion
+      , Nothing
       )
 
   , NamedSuggestCase
       ( "this test is for illustrative purposes as the splitEmail function should return a better representation of the true top-level domain in the case of an email address with subdomains. mailcheck will be unable to return a suggestion in the case of this email address"
       , suggestWith domains secondLevelDomains topLevelDomains
       , "test@mail.randomsmallcompany.cmo"
-      , NoSuggestion
+      , Nothing
       )
 
   , NamedSuggestCase
       ( "will not offer a suggestion that itself leads to another suggestion"
       , suggestWith domains secondLevelDomains topLevelDomains
       , "test@yahooo.cmo"
-      , Suggestion ("test", "yahoo.com", "test@yahoo.com")
+      , Just ("test", "yahoo.com", "test@yahoo.com")
       )
 
   , NamedSuggestCase
       ( "will not offer suggestions for valid 2ld-tld combinations"
       , suggestWith domains secondLevelDomains topLevelDomains
       , "test@yahoo.co.uk"
-      , NoSuggestion
+      , Nothing
       )
 
   , NamedSuggestCase
       ( "will not offer suggestions for valid 2ld-tld even if theres a close fully-specified domain"
       , suggestWith domains secondLevelDomains topLevelDomains
       , "test@gmx.fr"
-      , NoSuggestion
+      , Nothing
       )
 
   , NamedSuggestCase
       ( "an example used in readme"
       , suggestWith ["yohomail.com"] [ "supamail" ] [ "cosmic" ]
       , "test@ohomail.co"
-      , Suggestion ("test", "yohomail.com", "test@yohomail.com")
+      , Just ("test", "yohomail.com", "test@yohomail.com")
       )
   , NamedSuggestCase
       ( "an example used in readme"
       , suggestWith ["yohomail.com"] [ "supamail" ] [ "cosmic" ]
       , "test@fakedomain.comic"
-      , Suggestion ("test", "fakedomain.cosmic", "test@fakedomain.cosmic")
+      , Just ("test", "fakedomain.cosmic", "test@fakedomain.cosmic")
       )
   , NamedSuggestCase
       ( "an example used in readme"
       , suggestWith ["yohomail.com"] [ "supamail" ] [ "cosmic" ]
       , "test@supermail.comic"
-      , Suggestion ("test", "supamail.cosmic", "test@supamail.cosmic")
+      , Just ("test", "supamail.cosmic", "test@supamail.cosmic")
       )
   ]
 
