@@ -54,10 +54,6 @@ import String
 import StringDistance exposing (sift3Distance)
 
 
-{- Convenient alias for the result -}
-type alias Mailcheck = Maybe (String, String, String)
-
-
 {-| Suggest a domain which may assist a user with a possible error
 in a candidate email address. This version uses the default internal lists
 of domains.
@@ -77,7 +73,7 @@ is equivalent to
 ```
 
 -}
-suggest : String -> Mailcheck
+suggest : String -> Maybe (String, String, String)
 suggest =
     suggestWith defaultDomains defaultSecondLevelDomains defaultTopLevelDomains
 
@@ -89,7 +85,7 @@ top level domains allowed to be empty
 second level domains allowed to be empty
 
 -}
-suggestWith : List String -> List String -> List String -> String -> Mailcheck
+suggestWith : List String -> List String -> List String -> String -> Maybe (String, String, String)
 suggestWith domains secondLevelDomains topLevelDomains email =
     let
       splitEmail' = splitEmail(String.toLower email)
@@ -106,7 +102,7 @@ domainThreshold =  2
 suggestWith'
   :  List String -> List String -> List String
   -> String -> String -> String -> String
-  -> Mailcheck
+  -> Maybe (String, String, String)
 suggestWith' domains secondLevelDomains topLevelDomains address domain sld tld =
     if  (List.member sld secondLevelDomains) && (List.member tld topLevelDomains) then
         Nothing
