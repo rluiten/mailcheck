@@ -14,22 +14,15 @@ This is a port of this javascript library https://github.com/mailcheck/mailcheck
 
 ## Basic Usage
 
-Running
-
+```elm
     Mailcheck.suggest 'test@gnail.com'
+      == Just ("test", "gmail.com", "test@gmail.com")
+```
 
-Returns
-
-    Just ("test", "gmail.com", "test@gmail.com")
-
-
-Running
-
+```elm
     Mailcheck.suggest 'test@gsnail.com'
-
-Returns
-
-    Nothing
+      == Nothing
+```
 
 # Create
 @docs suggest
@@ -151,7 +144,7 @@ Result is Maybe (address, domain, secondLevelDomain, topLevelDomain)
   (spitEmail "user") == Nothing
   (spitEmail "user@") == Nothing
   (spitEmail "user@moo.com") == Just("user", "moo.com", "moo", "com")
-  (spitEmail "user@moo.co.uk") == Just("user", "moo.com.uk", "moo", "com.uk")
+  (spitEmail "user@moo.co.uk") == Just("user", "moo.com.uk", "moo", "co.uk")
 ```
 
 -}
@@ -343,7 +336,7 @@ following: alphabetic, decimal digits, - _ . ! ~ * ' ( )
 Extra rules were added since Elm provides encodeURIComponent() functionality.
 
 ```elm
-  (encodeEmail "<hello>@domain.com") == "%3Chello%3E@domain.com"
+    (encodeEmail "<hello>@domain.com") == "%3Chello%3E@domain.com"
 ```
 
 -}

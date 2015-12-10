@@ -96,4 +96,4 @@ _ = Debug.log("mailcheckResult3") (input3, mailcheckResult3, test3Pass)
 License
 -------
 
-Released under the MIT License.
+Released under the BSD3 License.
