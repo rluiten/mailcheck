@@ -50,14 +50,15 @@ sift3Distance s1 s2 =
 
 
 {-| Longest Common Subsequence
-This is simple implementation and would benefit from memoization if
-performance is a problem. It also does not limit look ahead
+
+This is a simple implementation and would benefit from memoization if
+performance is a problem. It does not limit look ahead
 which can be very costly see lcsLimit for a limited look ahead version.
 
 Warning this gets very slow very quickly with increases in list lengths even
 17 character strings can cause things to bog down.
 
-This implementation based on http://rosettacode.org/wiki/Longest_common_subsequence#Haskell
+This implementation is based on http://rosettacode.org/wiki/Longest_common_subsequence#Haskell
 
 ```elm
     lcs ["a", "b", "c"] ["b", "c", "d"] == ["b", "c"]
@@ -76,6 +77,7 @@ lcs xs' ys' =
 
 
 {-| Return function which returns lcs with limited look ahead.
+
 Warning maxLookAhead quickly makes the returned function costly stay
 below 8 if you want responsiveness.
 
@@ -89,7 +91,8 @@ lcsLimit maxLookAhead = lcsLimit' 0 maxLookAhead
 
 
 {-| Implementation of Longest Common Subsequence with look ahead limit.
-This is simple implementation and would benefit from memoization.
+
+This is a simple implementation and would benefit from memoization.
 -}
 lcsLimit' : Int -> Int -> List Char -> List Char -> List Char
 lcsLimit' offset maxLookAhead xs' ys' =

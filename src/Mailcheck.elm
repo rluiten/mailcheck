@@ -26,12 +26,12 @@ This is a port of this javascript library https://github.com/mailcheck/mailcheck
 
 # Create
 @docs suggest
+@docs suggestWith
 
 # Utility
 @docs encodeEmail
 @docs splitEmail
 @docs findClosestDomain
-@docs suggestWith
 
 # Default domain lists used by suggest
 @docs defaultDomains
@@ -61,9 +61,14 @@ is equivalent to
     suggestWith defaultDomains defaultSecondLevelDomains defaultTopLevelDomains 'test@gmail.co'
 ```
 
+example
+
 ```elm
-  (suggest "user@gmil.com") == Just ("user", "gmail.com", "user@gmail.com")
+    (suggest "user@gmil.com")
+      == Just ("user", "gmail.com", "user@gmail.com")
 ```
+
+Result is Maybe (address, domain, secondLevelDomain, topLevelDomain)
 
 -}
 suggest : String -> Maybe (String, String, String)
@@ -73,9 +78,9 @@ suggest =
 
 {-| Suggest with passed in domain lists.
 
-domains is list of known valid domains
-top level domains allowed to be empty
-second level domains allowed to be empty
+* domains is list of known valid domains
+* top level domains is allowed to be empty
+* second level domains is allowed to be empty
 
 -}
 suggestWith : List String -> List String -> List String -> String -> Maybe (String, String, String)
@@ -137,7 +142,9 @@ buildSuggest topLevelDomains secondLevelDomains address domain tld sld =
         Just (address, suggestedDomain, address ++ "@" ++ suggestedDomain)
 
 {-| Split an email address up into components.
+
 This is exported to test it.
+
 Result is Maybe (address, domain, secondLevelDomain, topLevelDomain)
 
 ```elm
@@ -325,12 +332,13 @@ findClosestDomainWith distance threshold domain domains =
 {-| Encode the email address to prevent XSS but leave in valid
 characters, following this official spec:
 http://en.wikipedia.org/wiki/Email_address#Syntax
+
 This is exported to test it.
 
 encodeURI() will not encode: ~!@#$&*()=:/,;?+'
 Elm's Http.uriEncode actually calls encodeURIComponent
 
-encodeURIComponent escapes all characters except the
+encodeURIComponent() escapes all characters except the
 following: alphabetic, decimal digits, - _ . ! ~ * ' ( )
 
 Extra rules were added since Elm provides encodeURIComponent() functionality.
