@@ -11,7 +11,7 @@ What does it do?
 
 When your user types in "user@gmil.con", it will suggest "user@gmail.com".
 
-It is currently worth looking at the documenation at https://github.com/mailcheck/mailcheck
+It is currently worth looking at the documentation at https://github.com/mailcheck/mailcheck
 
 Installation
 ------------

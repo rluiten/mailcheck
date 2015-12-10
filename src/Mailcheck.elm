@@ -20,7 +20,7 @@ Running
 
 Returns
 
-    Suggestion ("test", "gmail.com", "test@gmail.com")
+    Just ("test", "gmail.com", "test@gmail.com")
 
 
 Running
