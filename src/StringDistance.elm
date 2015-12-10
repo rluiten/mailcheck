@@ -37,10 +37,7 @@ sift3Distance s1 s2 =
       lcs' : List Char -> List Char -> List Char
       lcs' = lcsLimit 5
     in
-      if (s1Len == 0) && (s2Len == 0) then
-        toFloat 0
-
-      else if s1Len == 0 then
+      if s1Len == 0 then
         toFloat s2Len
 
       else if s2Len == 0 then
@@ -70,13 +67,12 @@ This implementation based on http://rosettacode.org/wiki/Longest_common_subseque
 lcs : List Char -> List Char -> List Char
 lcs xs' ys' =
     case (xs', ys') of
-      ([], _) -> []
-      (_, []) -> []
       ((x::xs), (y::ys)) ->
         if x == y then
           x :: lcs xs ys
         else
           maxl (lcs xs' ys) (lcs xs ys')
+      _ -> []
 
 
 {-| Return function which returns lcs with limited look ahead.
@@ -102,8 +98,6 @@ lcsLimit' offset maxLookAhead xs' ys' =
 
     else
       case (xs', ys') of
-        ([], _) -> []
-        (_, []) -> []
         ((x::xs), (y::ys)) ->
           if x == y then
             x :: lcsLimit' 0 maxLookAhead xs ys
@@ -111,6 +105,7 @@ lcsLimit' offset maxLookAhead xs' ys' =
             maxl
               (lcsLimit' (offset + 1) maxLookAhead xs' ys)
               (lcsLimit' (offset + 1) maxLookAhead xs ys')
+        _ -> []
 
 
 {-| Return the List which is longer -}
