@@ -1,5 +1,5 @@
 {
-    "version": "3.0.2",
+    "version": "4.0.0",
     "summary": "Mailcheck suggest corrections to errors in email addresses",
     "repository": "https://github.com/rluiten/mailcheck.git",
     "license": "BSD3",
@@ -7,12 +7,12 @@
         "src"
     ],
     "exposed-modules": [
-        "Mailcheck",
-        "StringDistance"
+        "Mailcheck"
     ],
     "dependencies": {
         "elm-lang/core": "3.0.0 <= v < 4.0.0",
-        "evancz/elm-http": "3.0.0 <= v < 4.0.0"
+        "evancz/elm-http": "3.0.0 <= v < 4.0.0",
+        "rluiten/stringdistance": "1.0.1 <= v < 2.0.0"
     },
     "elm-version": "0.16.0 <= v < 0.17.0"
 }
