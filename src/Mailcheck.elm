@@ -2,7 +2,8 @@ module Mailcheck
     ( suggest
     , suggestWith
     , findClosestDomain
-    , splitEmail
+    , mailParts
+    , MailParts
     , encodeEmail
     , defaultDomains
     , defaultTopLevelDomains
@@ -30,7 +31,7 @@ This is a port of this javascript library https://github.com/mailcheck/mailcheck
 
 # Utility
 @docs encodeEmail
-@docs splitEmail
+@docs mailParts
 @docs findClosestDomain
 
 # Default domain lists used by suggest
@@ -46,6 +47,13 @@ import String
 
 import StringDistance exposing (sift3Distance)
 
+type alias MailParts =
+  {
+    topLevelDomain : String,
+    secondLevelDomain : String,
+    domain : String,
+    address : String
+  }
 
 {-| Suggest a domain which may assist a user with a possible error
 in a candidate email address. This version uses the default internal lists
@@ -86,12 +94,12 @@ suggest =
 suggestWith : List String -> List String -> List String -> String -> Maybe (String, String, String)
 suggestWith domains secondLevelDomains topLevelDomains email =
     let
-      splitEmail' = splitEmail(String.toLower email)
+      mailParts' = String.toLower email |> mailParts
     in
-      case splitEmail' of
+      case mailParts' of
         Nothing -> Nothing
-        Just (address', domain', secondLevelDomain', topLevelDomain') ->
-          suggestWith' domains secondLevelDomains topLevelDomains address' domain' secondLevelDomain' topLevelDomain'
+        Just parts ->
+          suggestWith' domains secondLevelDomains topLevelDomains parts.address parts.domain parts.secondLevelDomain parts.topLevelDomain
 
 
 domainThreshold =  2
@@ -145,51 +153,52 @@ buildSuggest topLevelDomains secondLevelDomains address domain tld sld =
 
 This is exported to test it.
 
-Result is Maybe (address, domain, secondLevelDomain, topLevelDomain)
-
 ```elm
-  (spitEmail "user") == Nothing
-  (spitEmail "user@") == Nothing
-  (spitEmail "user@moo.com") == Just("user", "moo.com", "moo", "com")
-  (spitEmail "user@moo.co.uk") == Just("user", "moo.com.uk", "moo", "co.uk")
+  (mailParts "user") == Nothing
+  (mailParts "user@") == Nothing
+  (mailParts "user@moo.com") == Just({
+                                      topLevelDomain = "user",
+                                      secondLevelDomain = "moo.com",
+                                      domain = "moo",
+                                      address = "com" })
+  (mailParts "user@moo.co.uk") == Just({
+                                        topLevelDomain = "user",
+                                        secondLevelDomain = "moo.com.uk",
+                                        domain = "moo",
+                                        address = "co.ul" })
 ```
 
 -}
-splitEmail : String -> Maybe (String, String, String, String)
-splitEmail email =
-    let
-      -- reverse so have domain at head of list
-      reverseSplitEmail =
-        List.reverse <| String.split "@" <| String.trim email
-    in
-      if List.any (\p -> String.isEmpty p) reverseSplitEmail then
-        Nothing
+mailParts : String -> Maybe MailParts
+mailParts mail =
 
-      else
-        case reverseSplitEmail of
-          [] -> Nothing
-          _ :: [] -> Nothing
-          domain :: rest ->
-            let address = String.join "@" <| List.reverse rest
-                --_ = Debug.log("domain") (domain, rest, address, reverseSplitEmail)
-            in  splitDomain address domain
+  let mailSplit = String.trim mail |> String.split "@" |> List.reverse
+      domain = List.head mailSplit |> Maybe.withDefault ""
+      address = List.tail mailSplit |> Maybe.withDefault [] |> List.reverse |> String.join "@"
+  in
+     if List.length mailSplit < 2 || List.member "" mailSplit then
+       Nothing
+     else
+       Just {
+         topLevelDomain = topLevelDomain domain,
+         secondLevelDomain = secondLevelDomain domain,
+         domain = domain,
+         address = address
+       }
 
+topLevelDomain : String -> String
+topLevelDomain domain =
+  case (String.split "." domain) of
+    x::[] -> x
+    _::xs -> String.join "." xs
+    _ -> ""
 
-splitDomain address domain =
-    let
-      splitDomain = String.split "." domain
-    in
-      case splitDomain of
-        -- The address does not have a top-level domain
-        [] -> Nothing
-
-        -- The address has only a top-level domain (valid under RFC)
-        top :: [] -> Just (address, domain, "", top)
-
-        secondLevelDomain :: restDomains ->
-          let topLevelDomain = String.join "." restDomains
-          in  Just (address, domain, secondLevelDomain, topLevelDomain)
-
+secondLevelDomain : String -> String
+secondLevelDomain domain =
+  case (String.split "." domain) of
+    x::[] -> ""
+    x::_ -> x
+    _ -> ""
 
 {-| default list of domains used in suggest -}
 defaultDomains : List String
