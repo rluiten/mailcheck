@@ -100,7 +100,7 @@ runFcdTest name data =
             test input -- input String doubles as test name
               (assertEqual
                 expect
-                (findClosestDomain input domains)
+                (findClosestDomain 2.0 input domains)
               )
           ) data
     in
