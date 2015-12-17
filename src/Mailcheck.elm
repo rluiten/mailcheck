@@ -44,6 +44,7 @@ This is a port of this javascript library https://github.com/mailcheck/mailcheck
 import Http
 import Regex
 import String
+import Maybe exposing (andThen)
 
 import StringDistance exposing (sift3Distance)
 
@@ -54,6 +55,8 @@ type alias MailParts =
     domain : String,
     address : String
   }
+
+domainThreshold =  2
 
 {-| Suggest a domain which may assist a user with a possible error
 in a candidate email address. This version uses the default internal lists
@@ -83,6 +86,11 @@ suggest : String -> Maybe (String, String, String)
 suggest =
     suggestWith defaultDomains defaultSecondLevelDomains defaultTopLevelDomains
 
+otherwise2 : (a -> Maybe b) -> (a -> Maybe b) -> a -> Maybe b
+otherwise2 a b context =
+  case (a context) of
+    Nothing -> (b context)
+    x -> x
 
 {-| Suggest with passed in domain lists.
 
@@ -93,61 +101,56 @@ suggest =
 -}
 suggestWith : List String -> List String -> List String -> String -> Maybe (String, String, String)
 suggestWith domains secondLevelDomains topLevelDomains email =
-    let
-      mailParts' = String.toLower email |> mailParts
-    in
-      case mailParts' of
+  let email' = String.toLower email
+      checkPartsNotInList' = checkPartsNotInList secondLevelDomains topLevelDomains
+      closestDomain' = closestDomain domains
+      closestSecondLevelDomain' = closestSecondLevelDomain secondLevelDomains topLevelDomains
+      getResult mailParts = (closestDomain' `otherwise2` closestSecondLevelDomain') mailParts
+  in
+      (mailParts email') `andThen` checkPartsNotInList' `andThen` getResult
+
+checkPartsNotInList : List String -> List String -> MailParts -> Maybe MailParts
+checkPartsNotInList secondLevelDomains topLevelDomains mailParts =
+  if not ((List.member mailParts.secondLevelDomain secondLevelDomains) && (List.member mailParts.topLevelDomain topLevelDomains)) then
+      Just mailParts
+  else
+    Nothing
+
+closestDomain : List String -> MailParts -> Maybe (String, String, String)
+closestDomain domains mailParts =
+  let
+      findResult = findClosestDomainWith sift3Distance domainThreshold mailParts.domain domains
+  in
+      case findResult of
+        Just closestDomain ->
+          if mailParts.domain == closestDomain then
+            Nothing
+          else
+            Just (mailParts.address, closestDomain, mailParts.address ++ "@" ++ closestDomain)
         Nothing -> Nothing
-        Just parts ->
-          suggestWith' domains secondLevelDomains topLevelDomains parts.address parts.domain parts.secondLevelDomain parts.topLevelDomain
 
-
-domainThreshold =  2
-
-
-suggestWith'
-  :  List String -> List String -> List String
-  -> String -> String -> String -> String
-  -> Maybe (String, String, String)
-suggestWith' domains secondLevelDomains topLevelDomains address domain sld tld =
-    if  (List.member sld secondLevelDomains) && (List.member tld topLevelDomains) then
-        Nothing
-
-    else
-      let
-        findResult = findClosestDomainWith sift3Distance domainThreshold domain domains
-      in
-        case findResult of
-          Nothing ->
-            buildSuggest topLevelDomains secondLevelDomains address domain tld sld
-          Just (closestDomain) ->
-            if domain == closestDomain then
-              Nothing
-
-            else
-              Just (address, closestDomain, address ++ "@" ++ closestDomain)
-
-
-buildSuggest topLevelDomains secondLevelDomains address domain tld sld =
-    let
+closestSecondLevelDomain : List String -> List String -> MailParts -> Maybe (String, String, String)
+closestSecondLevelDomain secondLevelDomains topLevelDomains mailParts =
+  let
       secondLevelThreshold = 2
       topLevelThreshold = 2
       findSld = findClosestDomainWith sift3Distance secondLevelThreshold
-      findResultSld = findSld sld secondLevelDomains
+      findResultSld = findSld mailParts.secondLevelDomain secondLevelDomains
       findTld = findClosestDomainWith sift3Distance topLevelThreshold
-      findResultTld = findTld tld topLevelDomains
+      findResultTld = findTld mailParts.topLevelDomain topLevelDomains
       suggestedDomain =
         case (findResultSld, findResultTld) of
-          (Nothing, Nothing) -> domain
-          (Just closestSld, Nothing) -> closestSld ++ "." ++ tld
-          (Nothing, Just closestTld) -> sld ++ "." ++ closestTld
+          (Nothing, Nothing) -> mailParts.domain
+          (Just closestSld, Nothing) -> closestSld ++ "." ++ mailParts.topLevelDomain
+          (Nothing, Just closestTld) -> mailParts.secondLevelDomain ++ "." ++ closestTld
           (Just closestSld, Just closestTld) -> closestSld ++ "." ++ closestTld
-    in
-      if suggestedDomain == domain then
+  in
+      if suggestedDomain == mailParts.domain then
         Nothing
 
       else
-        Just (address, suggestedDomain, address ++ "@" ++ suggestedDomain)
+        Just (mailParts.address, suggestedDomain, mailParts.address ++ "@" ++ suggestedDomain)
+
 
 {-| Split an email address up into components.
 
