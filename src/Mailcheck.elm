@@ -57,6 +57,8 @@ type alias MailParts =
   }
 
 domainThreshold =  2
+secondLevelThreshold = 2
+topLevelThreshold = 2
 
 {-| Suggest a domain which may assist a user with a possible error
 in a candidate email address. This version uses the default internal lists
@@ -118,26 +120,24 @@ checkPartsNotInList secondLevelDomains topLevelDomains mailParts =
 
 closestDomain : List String -> MailParts -> Maybe (String, String, String)
 closestDomain domains mailParts =
-  let
-      findResult = findClosestDomainWith sift3Distance domainThreshold mailParts.domain domains
+  let closestDomain = findClosestDomainWith sift3Distance domainThreshold mailParts.domain domains
+      result closestDomain = Just (mailParts.address, closestDomain, mailParts.address ++ "@" ++ closestDomain)
+      isDifferentDomain closestDomain =
+        if closestDomain == mailParts.domain then
+          Nothing
+        else
+          Just closestDomain
   in
-      case findResult of
-        Just closestDomain ->
-          if mailParts.domain == closestDomain then
-            Nothing
-          else
-            Just (mailParts.address, closestDomain, mailParts.address ++ "@" ++ closestDomain)
-        Nothing -> Nothing
+      closestDomain `andThen` isDifferentDomain `andThen` result
+
 
 closestSecondLevelDomain : List String -> List String -> MailParts -> Maybe (String, String, String)
 closestSecondLevelDomain secondLevelDomains topLevelDomains mailParts =
   let
-      secondLevelThreshold = 2
-      topLevelThreshold = 2
-      findSld = findClosestDomainWith sift3Distance secondLevelThreshold
-      findResultSld = findSld mailParts.secondLevelDomain secondLevelDomains
-      findTld = findClosestDomainWith sift3Distance topLevelThreshold
-      findResultTld = findTld mailParts.topLevelDomain topLevelDomains
+      findClosest threshold domains =
+        findClosestDomainWith sift3Distance threshold domains
+      findResultSld = findClosest secondLevelThreshold mailParts.secondLevelDomain secondLevelDomains
+      findResultTld = findClosest topLevelThreshold mailParts.topLevelDomain topLevelDomains
       suggestedDomain =
         case (findResultSld, findResultTld) of
           (Nothing, Nothing) -> mailParts.domain
