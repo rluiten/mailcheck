@@ -88,6 +88,10 @@ suggest : String -> Maybe (String, String, String)
 suggest =
     suggestWith defaultDomains defaultSecondLevelDomains defaultTopLevelDomains
 
+{-|
+  Check if the first function returns a Just x calling it with the context
+  otherwise return the result of the second function applying the context to it
+-}
 otherwise2 : (a -> Maybe b) -> (a -> Maybe b) -> a -> Maybe b
 otherwise2 a b context =
   case (a context) of
@@ -111,6 +115,7 @@ suggestWith domains secondLevelDomains topLevelDomains email =
   in
       (mailParts email') `andThen` checkPartsNotInList' `andThen` getResult
 
+{-| Check that secondLevelDomain and topLevelDomain are not in the accepted list of domains -}
 checkPartsNotInList : List String -> List String -> MailParts -> Maybe MailParts
 checkPartsNotInList secondLevelDomains topLevelDomains mailParts =
   if not ((List.member mailParts.secondLevelDomain secondLevelDomains) && (List.member mailParts.topLevelDomain topLevelDomains)) then
