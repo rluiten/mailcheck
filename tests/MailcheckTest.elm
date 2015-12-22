@@ -5,7 +5,8 @@ import String
 import ElmTest exposing (..)
 import Mailcheck exposing
     ( findClosestDomain
-    , splitEmail
+    , mailParts
+    , MailParts
     , encodeEmail
     , suggest
     , suggestWith)
@@ -23,7 +24,7 @@ tests : Test
 tests =
     suite "Mailcheck tests"
       [ encodeEmailTests
-      , splitEmailTests
+      , mailPartsTests
       , findClosestDomainTests
       , suggestTests
       ]
@@ -99,50 +100,59 @@ runFcdTest name data =
             test input -- input String doubles as test name
               (assertEqual
                 expect
-                (findClosestDomain input domains)
+                (findClosestDomain 2.0 input domains)
               )
           ) data
     in
       suite name tests
 
 
-splitEmailTests : Test
-splitEmailTests =
-    suite "splitEmail"
-      [ runSplitEmailTest "returns a hash of the address, the domain, and the top-level domain" splitEmailData
-      , runSplitEmailTest "splits RFC compliant emails" splitRfcCompliantData
-      , runSplitEmailTest "returns Nothing for email addresses that are not RFC compliant" splitNonRfcCompliantData
-      , runSplitEmailTest "trims spaces from the start and end of the string" splitTrimsSpacesData
+mailPartsTests : Test
+mailPartsTests =
+    suite "mailParts"
+      [ runMailPartsTest "returns a MailParts with of the address, the domain, and the top-level domain" mailPartsData
+      , runMailPartsTest "splits RFC compliant emails" splitRfcCompliantData
+      , runMailPartsTest "returns Nothing for email addresses that are not RFC compliant" splitNonRfcCompliantData
+      , runMailPartsTest "trims spaces from the start and end of the string" splitTrimsSpacesData
       ]
 
 
 -- List (email, (split result))
-type alias ExpectedSplitEmailExamples = List (String, Maybe(String, String, String, String))
+type alias ExpectedSplitEmailExamples = List (String, Maybe MailParts)
 
+mailPartsInit : String -> String -> String -> String -> Maybe MailParts
+mailPartsInit address domain sld tld =
+  Just {
+    topLevelDomain = tld,
+    secondLevelDomain = sld,
+    domain = domain,
+    address = address
+  }
 
-splitEmailData : ExpectedSplitEmailExamples
-splitEmailData =
-    [ ( "test@example.com"
-      , Just ("test", "example.com", "example", "com"))
-    , ( "test@example.co.uk"
-      , Just ("test", "example.co.uk", "example", "co.uk"))
-    , ( "test@mail.randomsmallcompany.co.uk"
-      , Just ("test", "mail.randomsmallcompany.co.uk", "mail", "randomsmallcompany.co.uk"))
-    ]
+mailPartsData : ExpectedSplitEmailExamples
+mailPartsData =
+  [
+    ( "test@example.com"
+    , ( mailPartsInit "test" "example.com" "example" "com"))
+    ,("test@example.co.uk"
+    , ( mailPartsInit "test" "example.co.uk" "example" "co.uk"))
+    ,("test@mail.randomsmallcompany.co.uk" ,
+      ( mailPartsInit "test" "mail.randomsmallcompany.co.uk" "mail" "randomsmallcompany.co.uk"))
+   ]
 
 
 splitRfcCompliantData : ExpectedSplitEmailExamples
 splitRfcCompliantData =
     [ ( "\"foo@bar\"@example.com"
-      , Just ("\"foo@bar\"", "example.com", "example", "com"))
+      , mailPartsInit "\"foo@bar\"" "example.com" "example" "com")
     , ( "containsnumbers1234567890@example.com"
-      , Just ("containsnumbers1234567890", "example.com", "example", "com"))
+      , mailPartsInit "containsnumbers1234567890" "example.com" "example" "com")
     , ( "contains+symbol@example.com"
-      , Just ("contains+symbol", "example.com", "example", "com"))
+      , mailPartsInit "contains+symbol" "example.com" "example" "com")
     , ( "contains-symbol@example.com"
-      , Just ("contains-symbol", "example.com", "example", "com"))
+      , mailPartsInit "contains-symbol" "example.com" "example" "com")
     , ( "contains.symbol@domain.contains.symbol"
-      , Just ("contains.symbol", "domain.contains.symbol", "domain", "contains.symbol"))
+      , mailPartsInit "contains.symbol" "domain.contains.symbol" "domain" "contains.symbol")
 
       {- Original mailcheck.js test
           expect(mailcheck.splitEmail('"contains.and\ symbols"@example.com')).toEqual({
@@ -155,10 +165,10 @@ splitRfcCompliantData =
         * space is not escaped in Elm by '\' as it has different behaviour to javascript
       -}
     , ( "\"contains.and symbols\"@example.com"
-      , Just ("\"contains.and symbols\"", "example.com", "example", "com"))
+      , mailPartsInit "\"contains.and symbols\"" "example.com" "example" "com")
 
     , ( "\"contains.and.@.symbols.com\"@example.com"
-      , Just ("\"contains.and.@.symbols.com\"", "example.com", "example", "com"))
+      , mailPartsInit "\"contains.and.@.symbols.com\"" "example.com" "example" "com")
 
       {- Original mailcheck.js test
           expect(mailcheck.splitEmail('"()<>[]:;@,\\\"!#$%&\'*+-/=?^_`{}|\ \ \ \ \ ~\ \ \ \ \ \ \ ?\ \ \ \ \ \ \ \ \ \ \ \ ^_`{}|~.a"@allthesymbols.com')).toEqual({
@@ -172,14 +182,14 @@ splitRfcCompliantData =
         * backticks are not escaped by '\' in Elm
       -}
      , ( "\"()<>[]:;@,\\\"!#$%&'*+-/=?^_`{}|     ~       ?            ^_`{}|~.a\"@allthesymbols.com"
-       , Just ("\"()<>[]:;@,\\\"!#$%&'*+-/=?^_`{}|     ~       ?            ^_`{}|~.a\""
-              , "allthesymbols.com"
-              , "allthesymbols"
-              , "com")
+       , mailPartsInit "\"()<>[]:;@,\\\"!#$%&'*+-/=?^_`{}|     ~       ?            ^_`{}|~.a\""
+              "allthesymbols.com"
+              "allthesymbols"
+              "com"
        )
 
     , ( "postbox@com"
-      , Just ("postbox", "com", "", "com"))
+      , mailPartsInit "postbox" "com" "" "com")
     ]
 
 
@@ -195,14 +205,14 @@ splitNonRfcCompliantData =
 splitTrimsSpacesData : ExpectedSplitEmailExamples
 splitTrimsSpacesData =
     [ ( " postbox@com"
-      , Just ("postbox", "com", "", "com"))
+      , mailPartsInit "postbox" "com" "" "com")
     , ( "postbox@com "
-      , Just ("postbox", "com", "", "com"))
+      , mailPartsInit "postbox" "com" "" "com")
     ]
 
 
-runSplitEmailTest : String -> ExpectedSplitEmailExamples -> Test
-runSplitEmailTest name data =
+runMailPartsTest : String -> ExpectedSplitEmailExamples -> Test
+runMailPartsTest name data =
     let
       tests =
         List.map
@@ -210,7 +220,7 @@ runSplitEmailTest name data =
             test name -- name String doubles as test name
               (assertEqual
                 expect
-                (splitEmail email)
+                (mailParts email)
               )
           ) data
     in
