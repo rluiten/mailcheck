@@ -46,9 +46,11 @@ This is a port of this javascript library https://github.com/mailcheck/mailcheck
 import Http
 import Regex
 import String
-import Maybe exposing (andThen)
+import Maybe
 
 import StringDistance exposing (sift3Distance)
+import MaybeUtils exposing (thenAnd, thenOneOf)
+
 
 type alias MailParts =
   {
@@ -58,7 +60,9 @@ type alias MailParts =
     address : String
   }
 
+
 domainThreshold =  2
+
 
 {-| Suggest a domain which may assist a user with a possible error
 in a candidate email address. This version uses the default internal lists
@@ -86,13 +90,12 @@ Result is Maybe (address, domain, secondLevelDomain, topLevelDomain)
 -}
 suggest : String -> Maybe (String, String, String)
 suggest =
-    suggestWith defaultDomains defaultSecondLevelDomains defaultTopLevelDomains
+    suggestWith
+      defaultDomains
+      defaultSecondLevelDomains
+      defaultTopLevelDomains
 
-otherwise2 : (a -> Maybe b) -> (a -> Maybe b) -> a -> Maybe b
-otherwise2 a b context =
-  case (a context) of
-    Nothing -> (b context)
-    x -> x
+
 
 {-| Suggest with passed in domain lists.
 
@@ -101,22 +104,28 @@ otherwise2 a b context =
 * second level domains is allowed to be empty
 
 -}
-suggestWith : List String -> List String -> List String -> String -> Maybe (String, String, String)
+suggestWith :
+    List String
+    -> List String
+    -> List String
+    -> String
+    -> Maybe (String, String, String)
 suggestWith domains secondLevelDomains topLevelDomains email =
-  let email' = String.toLower email
-      checkPartsNotInList' = checkPartsNotInList secondLevelDomains topLevelDomains
-      closestDomain' = closestDomain domains
-      closestSecondLevelDomain' = closestSecondLevelDomain secondLevelDomains topLevelDomains
-      getResult mailParts = (closestDomain' `otherwise2` closestSecondLevelDomain') mailParts
-  in
-      (mailParts email') `andThen` checkPartsNotInList' `andThen` getResult
+    mailParts (String.toLower email)
+    |> thenAnd (checkPartsNotInList secondLevelDomains topLevelDomains)
+    |> thenOneOf
+        [ closestDomain domains
+        , closestSecondLevelDomain secondLevelDomains topLevelDomains
+        ]
+
 
 checkPartsNotInList : List String -> List String -> MailParts -> Maybe MailParts
 checkPartsNotInList secondLevelDomains topLevelDomains mailParts =
-  if not ((List.member mailParts.secondLevelDomain secondLevelDomains) && (List.member mailParts.topLevelDomain topLevelDomains)) then
+    if not ((List.member mailParts.secondLevelDomain secondLevelDomains) && (List.member mailParts.topLevelDomain topLevelDomains)) then
       Just mailParts
-  else
-    Nothing
+    else
+      Nothing
+
 
 closestDomain : List String -> MailParts -> Maybe (String, String, String)
 closestDomain domains mailParts =
@@ -131,9 +140,10 @@ closestDomain domains mailParts =
             Just (mailParts.address, closestDomain, mailParts.address ++ "@" ++ closestDomain)
         Nothing -> Nothing
 
+
 closestSecondLevelDomain : List String -> List String -> MailParts -> Maybe (String, String, String)
 closestSecondLevelDomain secondLevelDomains topLevelDomains mailParts =
-  let
+    let
       secondLevelThreshold = 2
       topLevelThreshold = 2
       findSld = findClosestDomainWith sift3Distance secondLevelThreshold
@@ -142,17 +152,23 @@ closestSecondLevelDomain secondLevelDomains topLevelDomains mailParts =
       findResultTld = findTld mailParts.topLevelDomain topLevelDomains
       suggestedDomain =
         case (findResultSld, findResultTld) of
-          (Nothing, Nothing) -> mailParts.domain
-          (Just closestSld, Nothing) -> closestSld ++ "." ++ mailParts.topLevelDomain
-          (Nothing, Just closestTld) -> mailParts.secondLevelDomain ++ "." ++ closestTld
-          (Just closestSld, Just closestTld) -> closestSld ++ "." ++ closestTld
-  in
+          (Nothing, Nothing) ->
+            mailParts.domain
+          (Just closestSld, Nothing) ->
+            closestSld ++ "." ++ mailParts.topLevelDomain
+          (Nothing, Just closestTld) ->
+            mailParts.secondLevelDomain ++ "." ++ closestTld
+          (Just closestSld, Just closestTld) ->
+            closestSld ++ "." ++ closestTld
+    in
       if suggestedDomain == mailParts.domain then
         Nothing
-
       else
-        Just (mailParts.address, suggestedDomain, mailParts.address ++ "@" ++ suggestedDomain)
-
+        Just
+          ( mailParts.address
+          , suggestedDomain
+          , mailParts.address ++ "@" ++ suggestedDomain
+          )
 
 
 {-| Split an email address up into components.
@@ -207,35 +223,45 @@ splitEmail email =
 -}
 mailParts : String -> Maybe MailParts
 mailParts mail =
-  let mailSplit = String.trim mail |> String.split "@" |> List.reverse
-      domain = List.head mailSplit |> Maybe.withDefault ""
-      address = List.tail mailSplit |> Maybe.withDefault [] |> List.reverse |> String.join "@"
-  in
-     if List.length mailSplit < 2 || List.member "" mailSplit then
-       Nothing
-     else
-       Just {
-         topLevelDomain = topLevelDomain domain,
-         secondLevelDomain = secondLevelDomain domain,
-         domain = domain,
-         address = address
-       }
+    let
+      mailSplit =
+        String.trim mail
+        |> String.split "@"
+        |> List.reverse
+      domain =
+        List.head mailSplit
+        |> Maybe.withDefault ""
+      address =
+        List.tail mailSplit
+        |> Maybe.withDefault []
+        |> List.reverse
+        |> String.join "@"
+    in
+      if List.length mailSplit < 2 || List.member "" mailSplit then
+        Nothing
+      else
+        Just
+          { topLevelDomain = topLevelDomain domain
+          , secondLevelDomain = secondLevelDomain domain
+          , domain = domain
+          , address = address
+          }
 
 
 topLevelDomain : String -> String
 topLevelDomain domain =
-  case (String.split "." domain) of
-    x::[] -> x
-    _::xs -> String.join "." xs
-    _ -> ""
+    case (String.split "." domain) of
+      x::[] -> x
+      _::xs -> String.join "." xs
+      _ -> ""
 
 
 secondLevelDomain : String -> String
 secondLevelDomain domain =
-  case (String.split "." domain) of
-    x::[] -> ""
-    x::_ -> x
-    _ -> ""
+    case (String.split "." domain) of
+      x::[] -> ""
+      x::_ -> x
+      _ -> ""
 
 
 {-| default list of domains used in suggest -}
@@ -345,7 +371,8 @@ is equivalent to
 ```
 -}
 findClosestDomain : String -> List String -> Maybe String
-findClosestDomain = findClosestDomainWith sift3Distance domainThreshold
+findClosestDomain =
+    findClosestDomainWith sift3Distance domainThreshold
 
 
 {-| Find closest domain in given list of domains using the
@@ -397,27 +424,27 @@ Extra rules were added since Elm provides encodeURIComponent() functionality.
 -}
 encodeEmail : String -> String
 encodeEmail email =
-  let
+    let
       replace pattern replacement =
         Regex.replace Regex.All (Regex.regex pattern) (\_ -> replacement)
       --en = Http.uriEncode email
       --_ = Debug.log("encoded") en
-  in  Http.uriEncode email
-        -- these replace rules from mailcheck.js and it uses encodeURI
-        |> replace "%20" " "
-        |> replace "%25" "%"
-        |> replace "%5E" "^"
-        |> replace "%60" "`"
-        |> replace "%7B" "{"
-        |> replace "%7C" "|"
-        |> replace "%7D" "}"
-         -- extra rules as using encodeURIComponent via Http.uriEncode not encodeURI
-        |> replace "%40" "@"
-        |> replace "%2B" "+"
-        |> replace "%23" "#"
-        |> replace "%24" "$"
-        |> replace "%26" "&"
-        |> replace "%2F" "/"
-        |> replace "%3D" "="
-        |> replace "%3F" "?"
-        |> replace "%22" "\""
+    in Http.uriEncode email
+      -- these replace rules from mailcheck.js and it uses encodeURI
+      |> replace "%20" " "
+      |> replace "%25" "%"
+      |> replace "%5E" "^"
+      |> replace "%60" "`"
+      |> replace "%7B" "{"
+      |> replace "%7C" "|"
+      |> replace "%7D" "}"
+       -- extra rules as using encodeURIComponent via Http.uriEncode not encodeURI
+      |> replace "%40" "@"
+      |> replace "%2B" "+"
+      |> replace "%23" "#"
+      |> replace "%24" "$"
+      |> replace "%26" "&"
+      |> replace "%2F" "/"
+      |> replace "%3D" "="
+      |> replace "%3F" "?"
+      |> replace "%22" "\""
