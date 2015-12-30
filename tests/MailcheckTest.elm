@@ -33,11 +33,10 @@ tests =
 findClosestDomainTests : Test
 findClosestDomainTests =
     suite "findClosestDomain"
-      [ --runFcdTest "returns the most similar domain" domainsData
-      --, runFcdTest "returns the most similar second-level domain" secondLevelDomainsData
-      --, runFcdTest "returns the most similar top-level domain" topLevelDomainsData
-      --,
-      runFcdTest "limit search and return Nothing as needed" findLimitSearchRange
+      [ runFcdTest "returns the most similar domain" domainsData
+      , runFcdTest "returns the most similar second-level domain" secondLevelDomainsData
+      , runFcdTest "returns the most similar top-level domain" topLevelDomainsData
+      , runFcdTest "limit search and return Nothing as needed" findLimitSearchRange
       ]
 
 
@@ -74,9 +73,9 @@ topLevelDomainsData =
 
 
 limitSearchStrings =
-  [ "xxxxxx"
-  , "ovenmat"
-  ]
+    [ "xxxxxx"
+    , "ovenmat"
+    ]
 
 
 findLimitSearchRange : ExpectedFindClosestDomainExamples
@@ -93,18 +92,16 @@ findLimitSearchRange =
 
 runFcdTest : String -> ExpectedFindClosestDomainExamples -> Test
 runFcdTest name data =
-    let
-      tests =
-        List.map
-          (\(expect, input, domains) ->
-            test input -- input String doubles as test name
-              (assertEqual
-                expect
-                (findClosestDomain input domains)
-              )
-          ) data
-    in
-      suite name tests
+    suite name <|
+      List.map
+        (\(expect, input, domains) ->
+          test input -- input String doubles as test name
+            (assertEqual
+              expect
+              (findClosestDomain input domains)
+            )
+        )
+        data
 
 
 mailPartsTests : Test
@@ -120,39 +117,48 @@ mailPartsTests =
 -- List (email, (split result))
 type alias ExpectedSplitEmailExamples = List (String, Maybe MailParts)
 
+
 mailPartsInit : String -> String -> String -> String -> Maybe MailParts
 mailPartsInit address domain sld tld =
-  Just {
-    topLevelDomain = tld,
-    secondLevelDomain = sld,
-    domain = domain,
-    address = address
-  }
+    Just
+      { topLevelDomain = tld,
+        secondLevelDomain = sld,
+        domain = domain,
+        address = address
+      }
+
 
 mailPartsData : ExpectedSplitEmailExamples
 mailPartsData =
-  [
-    ( "test@example.com"
-    , ( mailPartsInit "test" "example.com" "example" "com"))
-    ,("test@example.co.uk"
-    , ( mailPartsInit "test" "example.co.uk" "example" "co.uk"))
-    ,("test@mail.randomsmallcompany.co.uk" ,
-      ( mailPartsInit "test" "mail.randomsmallcompany.co.uk" "mail" "randomsmallcompany.co.uk"))
-   ]
+    [ ( "test@example.com"
+      , (mailPartsInit "test" "example.com" "example" "com")
+      )
+    , ( "test@example.co.uk"
+      , (mailPartsInit "test" "example.co.uk" "example" "co.uk")
+      )
+    , ( "test@mail.randomsmallcompany.co.uk"
+      , (mailPartsInit "test" "mail.randomsmallcompany.co.uk" "mail" "randomsmallcompany.co.uk")
+      )
+    ]
 
 
 splitRfcCompliantData : ExpectedSplitEmailExamples
 splitRfcCompliantData =
     [ ( "\"foo@bar\"@example.com"
-      , mailPartsInit "\"foo@bar\"" "example.com" "example" "com")
+      , mailPartsInit "\"foo@bar\"" "example.com" "example" "com"
+      )
     , ( "containsnumbers1234567890@example.com"
-      , mailPartsInit "containsnumbers1234567890" "example.com" "example" "com")
+      , mailPartsInit "containsnumbers1234567890" "example.com" "example" "com"
+      )
     , ( "contains+symbol@example.com"
-      , mailPartsInit "contains+symbol" "example.com" "example" "com")
+      , mailPartsInit "contains+symbol" "example.com" "example" "com"
+      )
     , ( "contains-symbol@example.com"
-      , mailPartsInit "contains-symbol" "example.com" "example" "com")
+      , mailPartsInit "contains-symbol" "example.com" "example" "com"
+      )
     , ( "contains.symbol@domain.contains.symbol"
-      , mailPartsInit "contains.symbol" "domain.contains.symbol" "domain" "contains.symbol")
+      , mailPartsInit "contains.symbol" "domain.contains.symbol" "domain" "contains.symbol"
+      )
 
       {- Original mailcheck.js test
           expect(mailcheck.splitEmail('"contains.and\ symbols"@example.com')).toEqual({
@@ -165,10 +171,11 @@ splitRfcCompliantData =
         * space is not escaped in Elm by '\' as it has different behaviour to javascript
       -}
     , ( "\"contains.and symbols\"@example.com"
-      , mailPartsInit "\"contains.and symbols\"" "example.com" "example" "com")
-
+      , mailPartsInit "\"contains.and symbols\"" "example.com" "example" "com"
+      )
     , ( "\"contains.and.@.symbols.com\"@example.com"
-      , mailPartsInit "\"contains.and.@.symbols.com\"" "example.com" "example" "com")
+      , mailPartsInit "\"contains.and.@.symbols.com\"" "example.com" "example" "com"
+      )
 
       {- Original mailcheck.js test
           expect(mailcheck.splitEmail('"()<>[]:;@,\\\"!#$%&\'*+-/=?^_`{}|\ \ \ \ \ ~\ \ \ \ \ \ \ ?\ \ \ \ \ \ \ \ \ \ \ \ ^_`{}|~.a"@allthesymbols.com')).toEqual({
@@ -189,7 +196,8 @@ splitRfcCompliantData =
        )
 
     , ( "postbox@com"
-      , mailPartsInit "postbox" "com" "" "com")
+      , mailPartsInit "postbox" "com" "" "com"
+      )
     ]
 
 
@@ -205,9 +213,11 @@ splitNonRfcCompliantData =
 splitTrimsSpacesData : ExpectedSplitEmailExamples
 splitTrimsSpacesData =
     [ ( " postbox@com"
-      , mailPartsInit "postbox" "com" "" "com")
+      , mailPartsInit "postbox" "com" "" "com"
+      )
     , ( "postbox@com "
-      , mailPartsInit "postbox" "com" "" "com")
+      , mailPartsInit "postbox" "com" "" "com"
+      )
     ]
 
 
@@ -245,7 +255,8 @@ encodeEmailExamples =
   , ( "a !#$%&'*+-/=?^_`{|}~\"@test.com", "a !#$%&'*+-/=?^_`{|}~\"@test.com")
   , ( "<script>alert(\"a\")</xscript>@emaildomain.con"
     , "%3Cscript%3Ealert(\"a\")%3C/xscript%3E@emaildomain.con" )
-  --, ( "<script>alert(\"a\")</script>@emaildomain.con", "cxxx" ) -- Compiler broken </script>
+     -- Elm 0.16 Compiler broken for </script> in string, so splitting strings.
+  , ( "<script>alert(\"a\")<" ++ "/script>@emaildomain.con", "%3Cscript%3Ealert(\"a\")%3C/script%3E@emaildomain.con" )
   ]
 
 
@@ -265,8 +276,6 @@ runEncodeEmailTest name data =
       suite name tests
 
 
-
-
 suggestTests : Test
 suggestTests = runSuggestTest "suggest cases" suggestionData
 
@@ -284,7 +293,8 @@ suggestionData =
   [ AnonSuggestCase
       ( suggest
       , "test@gmail.co"
-      , Just ("test", "gmail.com", "test@gmail.com") )
+      , Just ("test", "gmail.com", "test@gmail.com")
+      )
   , NamedSuggestCase
       ( "takes in an array of specified domains"
       , suggestWith domains [] []
@@ -436,6 +446,7 @@ suggestionData =
       , Just ("test", "supamail.cosmic", "test@supamail.cosmic")
       )
   ]
+
 
 runSuggestTest : String -> ExpectedSuggestExamples -> Test
 runSuggestTest name data =

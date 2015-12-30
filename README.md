@@ -13,6 +13,12 @@ When your user types in "user@gmil.con", it will suggest "user@gmail.com".
 
 It is currently worth looking at the documentation at https://github.com/mailcheck/mailcheck
 
+2015/12/30
+Thanks to https://github.com/Adrian2112 for a pull request, he created the mailparts
+records based email splitter. I have retained splitemail call to make the version change
+a Minor, but it now just uses the mailparts logic.
+
+
 Installation
 ------------
 

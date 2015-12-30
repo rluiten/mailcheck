@@ -2,6 +2,7 @@ module Mailcheck
     ( suggest
     , suggestWith
     , findClosestDomain
+    , splitEmail
     , mailParts
     , MailParts
     , encodeEmail
@@ -31,6 +32,7 @@ This is a port of this javascript library https://github.com/mailcheck/mailcheck
 
 # Utility
 @docs encodeEmail
+@docs splitEmail
 @docs mailParts
 @docs findClosestDomain
 
@@ -149,29 +151,59 @@ buildSuggest topLevelDomains secondLevelDomains address domain tld sld =
       else
         Just (address, suggestedDomain, address ++ "@" ++ suggestedDomain)
 
+
 {-| Split an email address up into components.
 
-This is exported to test it.
+This function has been retained to make it a Minor version change not a Major
+and now converts the output of mailparts to this form.
 
 ```elm
-  (mailParts "user") == Nothing
-  (mailParts "user@") == Nothing
-  (mailParts "user@moo.com") == Just({
-                                      topLevelDomain = "user",
-                                      secondLevelDomain = "moo.com",
-                                      domain = "moo",
-                                      address = "com" })
-  (mailParts "user@moo.co.uk") == Just({
-                                        topLevelDomain = "user",
-                                        secondLevelDomain = "moo.com.uk",
-                                        domain = "moo",
-                                        address = "co.ul" })
+    (spitEmail "user") == Nothing
+    (mailParts "user") == Nothing
+    (spitEmail "user@") == Nothing
+    (mailParts "user@") == Nothing
+    (spitEmail "user@moo.com") == Just("user", "moo.com", "moo", "com")
+    (spitEmail "user@moo.co.uk") == Just("user", "moo.com.uk", "moo", "co.uk")
 ```
+-}
+splitEmail : String -> Maybe (String, String, String, String)
+splitEmail email =
+    Maybe.map
+      (\parts ->
+        ( parts.topLevelDomain
+        , parts.secondLevelDomain
+        , parts.domain
+        , parts.address
+        )
+      )
+      (mailParts email)
 
+
+{-| Split an email address up into components.
+
+```elm
+    (mailParts "user") == Nothing
+    (mailParts "user@") == Nothing
+    (mailParts "user@moo.com") ==
+      Just
+      ( { topLevelDomain = "user"
+        , secondLevelDomain = "moo.com"
+        , domain = "moo"
+        , address = "com"
+        }
+      )
+    (mailParts "user@moo.co.uk") ==
+      Just
+      ( { topLevelDomain = "user"
+        , secondLevelDomain = "moo.com.uk"
+        , domain = "moo"
+        , address = "co.uk"
+        }
+      )
+```
 -}
 mailParts : String -> Maybe MailParts
 mailParts mail =
-
   let mailSplit = String.trim mail |> String.split "@" |> List.reverse
       domain = List.head mailSplit |> Maybe.withDefault ""
       address = List.tail mailSplit |> Maybe.withDefault [] |> List.reverse |> String.join "@"
@@ -186,6 +218,7 @@ mailParts mail =
          address = address
        }
 
+
 topLevelDomain : String -> String
 topLevelDomain domain =
   case (String.split "." domain) of
@@ -193,12 +226,14 @@ topLevelDomain domain =
     _::xs -> String.join "." xs
     _ -> ""
 
+
 secondLevelDomain : String -> String
 secondLevelDomain domain =
   case (String.split "." domain) of
     x::[] -> ""
     x::_ -> x
     _ -> ""
+
 
 {-| default list of domains used in suggest -}
 defaultDomains : List String
