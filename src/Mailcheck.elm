@@ -34,6 +34,7 @@ This is a port of this javascript library https://github.com/mailcheck/mailcheck
 @docs encodeEmail
 @docs splitEmail
 @docs mailParts
+@docs MailParts
 @docs findClosestDomain
 
 # Default domain lists used by suggest
@@ -52,6 +53,7 @@ import StringDistance exposing (sift3Distance)
 import MaybeUtils exposing (thenAnd, thenOneOf)
 
 
+{-| Record type alias for mailparts. -}
 type alias MailParts =
   {
     topLevelDomain : String,
@@ -132,7 +134,7 @@ checkPartsNotInList secondLevelDomains topLevelDomains mailParts =
 
 closestDomain : List String -> MailParts -> Maybe (String, String, String)
 closestDomain domains mailParts =
-  let closestDomain = findClosestDomain domainThreshold mailParts.domain domains
+  let closestDomain = findClosestDomain mailParts.domain domains
       result closestDomain = Just (mailParts.address, closestDomain, mailParts.address ++ "@" ++ closestDomain)
       isDifferentDomain closestDomain =
         if closestDomain == mailParts.domain then
@@ -149,7 +151,7 @@ closestSecondLevelDomain : List String -> List String -> MailParts -> Maybe (Str
 closestSecondLevelDomain secondLevelDomains topLevelDomains mailParts =
     let
       findClosest threshold domains =
-        findClosestDomain threshold domains
+        findClosestDomain domains
       findResultSld = findClosest secondLevelThreshold mailParts.secondLevelDomain secondLevelDomains
       findResultTld = findClosest topLevelThreshold mailParts.topLevelDomain topLevelDomains
       suggestedDomain =
@@ -372,9 +374,9 @@ is equivalent to
     findClosestDomainWith sift3Distance topLevelThreshold "test@gmail.co" slds tlds
 ```
 -}
-findClosestDomain : Float -> String -> List String -> Maybe String
-findClosestDomain threshold =
-    findClosestDomainWith sift3Distance threshold
+findClosestDomain : String -> List String -> Maybe String
+findClosestDomain =
+    findClosestDomainWith sift3Distance domainThreshold
 
 
 {-| Find closest domain in given list of domains using the
