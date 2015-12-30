@@ -121,6 +121,7 @@ suggestWith domains secondLevelDomains topLevelDomains email =
         ]
 
 
+{-| Check that secondLevelDomain and topLevelDomain are not in the accepted list of domains -}
 checkPartsNotInList : List String -> List String -> MailParts -> Maybe MailParts
 checkPartsNotInList secondLevelDomains topLevelDomains mailParts =
     if not ((List.member mailParts.secondLevelDomain secondLevelDomains) && (List.member mailParts.topLevelDomain topLevelDomains)) then
