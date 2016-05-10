@@ -51,6 +51,7 @@ import Maybe
 
 import StringDistance exposing (sift3Distance)
 import MaybeUtils exposing (thenAnd, thenOneOf)
+import Dict
 
 
 {-| Record type alias for mailparts. -}
@@ -407,6 +408,39 @@ findClosestDomainWith distance threshold domain domains =
           Just minDomain'
 
 
+encodeEmailReplacements : Dict.Dict String String
+encodeEmailReplacements =
+    Dict.fromList
+      [
+        -- these replace rules from mailcheck.js and it uses encodeURI
+        ("%20", " ")
+      , ("%25", "%")
+      , ("%5E", "^")
+      , ("%60", "`")
+      , ("%7B", "{")
+      , ("%7C", "|")
+      , ("%7D", "}")
+        -- extra rules as using encodeURIComponent via Http.uriEncode not encodeURI
+      , ("%40", "@")
+      , ("%2B", "+")
+      , ("%23", "#")
+      , ("%24", "$")
+      , ("%26", "&")
+      , ("%2F", "/")
+      , ("%3D", "=")
+      , ("%3F", "?")
+      , ("%22", "\"")
+      ]
+
+
+encodeEmailReplaceRegex : Regex.Regex
+encodeEmailReplaceRegex =
+    Dict.keys encodeEmailReplacements
+      |> List.intersperse "|"
+      |> String.concat
+      |> Regex.regex
+
+
 {-| Encode the email address to prevent XSS but leave in valid
 characters, following this official spec:
 http://en.wikipedia.org/wiki/Email_address#Syntax
@@ -428,27 +462,10 @@ Extra rules were added since Elm provides encodeURIComponent() functionality.
 -}
 encodeEmail : String -> String
 encodeEmail email =
-    let
-      replace pattern replacement =
-        Regex.replace Regex.All (Regex.regex pattern) (\_ -> replacement)
-      --en = Http.uriEncode email
-      --_ = Debug.log("encoded") en
-    in Http.uriEncode email
-      -- these replace rules from mailcheck.js and it uses encodeURI
-      |> replace "%20" " "
-      |> replace "%25" "%"
-      |> replace "%5E" "^"
-      |> replace "%60" "`"
-      |> replace "%7B" "{"
-      |> replace "%7C" "|"
-      |> replace "%7D" "}"
-       -- extra rules as using encodeURIComponent via Http.uriEncode not encodeURI
-      |> replace "%40" "@"
-      |> replace "%2B" "+"
-      |> replace "%23" "#"
-      |> replace "%24" "$"
-      |> replace "%26" "&"
-      |> replace "%2F" "/"
-      |> replace "%3D" "="
-      |> replace "%3F" "?"
-      |> replace "%22" "\""
+    email
+      |> Http.uriEncode
+      |> Regex.replace Regex.All encodeEmailReplaceRegex
+        (\m ->
+          encodeEmailReplacements
+            |> Dict.get m.match
+            |> Maybe.withDefault m.match)
