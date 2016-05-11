@@ -1,4 +1,4 @@
-module MailcheckTest where
+module MailcheckTest exposing (..)
 
 import String
 

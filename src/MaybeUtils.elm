@@ -1,4 +1,4 @@
-module MaybeUtils where
+module MaybeUtils exposing (..)
 
 {-| Utilities i have been finding useful to work with Maybe.
 

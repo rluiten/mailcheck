@@ -1,4 +1,4 @@
-module Mailcheck
+module Mailcheck exposing
     ( suggest
     , suggestWith
     , findClosestDomain
@@ -9,7 +9,7 @@ module Mailcheck
     , defaultDomains
     , defaultTopLevelDomains
     , defaultSecondLevelDomains
-    ) where
+    )
 
 {-| A library that suggests a correct domain when a user miss spells an email address.
 This is a port of this javascript library https://github.com/mailcheck/mailcheck
