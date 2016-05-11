@@ -1,5 +1,5 @@
 {
-    "version": "4.1.0",
+    "version": "4.1.1",
     "summary": "Mailcheck suggest corrections to errors in email addresses",
     "repository": "https://github.com/rluiten/mailcheck.git",
     "license": "BSD3",
