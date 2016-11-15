@@ -45,12 +45,13 @@ This is a port of this javascript library https://github.com/mailcheck/mailcheck
 -}
 
 import Http
+import Maybe
 import Regex
 import String
-import Maybe
+import Tuple exposing (second)
 
 import StringDistance exposing (sift3Distance)
-import MaybeUtils exposing (thenAnd, thenOneOf)
+import MaybeUtils exposing (thenOneOf)
 import Dict
 
 
@@ -117,7 +118,7 @@ suggestWith :
     -> Maybe (String, String, String)
 suggestWith domains secondLevelDomains topLevelDomains email =
     mailParts (String.toLower email)
-    |> thenAnd (checkPartsNotInList secondLevelDomains topLevelDomains)
+    |> Maybe.andThen (checkPartsNotInList secondLevelDomains topLevelDomains)
     |> thenOneOf
         [ closestDomain domains
         , closestSecondLevelDomain secondLevelDomains topLevelDomains
@@ -144,8 +145,8 @@ closestDomain domains mailParts =
           Just closestDomain
   in
       closestDomain
-      |> thenAnd isDifferentDomain
-      |> thenAnd result
+      |> Maybe.andThen isDifferentDomain
+      |> Maybe.andThen result
 
 
 closestSecondLevelDomain : List String -> List String -> MailParts -> Maybe (String, String, String)
@@ -394,18 +395,18 @@ findClosestDomainWith distance threshold domain domains =
     else
       let
         distances = List.map (\d -> (d, (distance domain d))) domains
-        minDist dist' min' = if (snd dist') < (snd min') then dist' else min'
-        (minDomain', minDist') = List.foldr minDist ("", 99.0) distances
-        --_ = Debug.log("fcd") (domain, distances, minDomain', minDist')
+        minDist dist_ min_ = if (second dist_) < (second min_) then dist_ else min_
+        (minDomain_, minDist_) = List.foldr minDist ("", 99.0) distances
+        --_ = Debug.log("fcd") (domain, distances, minDomain_, minDist_)
       in
-        if String.isEmpty minDomain' then
+        if String.isEmpty minDomain_ then
           Nothing
 
-        else if minDist' > threshold then
+        else if minDist_ > threshold then
           Nothing
 
         else
-          Just minDomain'
+          Just minDomain_
 
 
 encodeEmailReplacements : Dict.Dict String String
@@ -463,7 +464,7 @@ Extra rules were added since Elm provides encodeURIComponent() functionality.
 encodeEmail : String -> String
 encodeEmail email =
     email
-      |> Http.uriEncode
+      |> Http.encodeUri
       |> Regex.replace Regex.All encodeEmailReplaceRegex
         (\m ->
           encodeEmailReplacements

@@ -1,8 +1,10 @@
 module MailcheckTest exposing (..)
 
+import Expect
 import String
+import Test exposing (..)
+import Tuple exposing (first)
 
-import ElmTest exposing (..)
 import Mailcheck exposing
     ( findClosestDomain
     , mailParts
@@ -22,7 +24,7 @@ type alias Mailcheck = Maybe (String, String, String)
 
 tests : Test
 tests =
-    suite "Mailcheck tests"
+    describe "Mailcheck tests"
       [ encodeEmailTests
       , mailPartsTests
       , findClosestDomainTests
@@ -32,7 +34,7 @@ tests =
 
 findClosestDomainTests : Test
 findClosestDomainTests =
-    suite "findClosestDomain"
+    describe "findClosestDomain"
       [ runFcdTest "returns the most similar domain" domainsData
       , runFcdTest "returns the most similar second-level domain" secondLevelDomainsData
       , runFcdTest "returns the most similar top-level domain" topLevelDomainsData
@@ -92,11 +94,12 @@ findLimitSearchRange =
 
 runFcdTest : String -> ExpectedFindClosestDomainExamples -> Test
 runFcdTest name data =
-    suite name <|
+    describe name <|
       List.map
         (\(expect, input, domains) ->
-          test input -- input String doubles as test name
-            (assertEqual
+          -- input String doubles as test name
+          test input <| \() ->
+            (Expect.equal
               expect
               (findClosestDomain input domains)
             )
@@ -106,7 +109,7 @@ runFcdTest name data =
 
 mailPartsTests : Test
 mailPartsTests =
-    suite "mailParts"
+    describe "mailParts"
       [ runMailPartsTest "returns a MailParts with of the address, the domain, and the top-level domain" mailPartsData
       , runMailPartsTest "splits RFC compliant emails" splitRfcCompliantData
       , runMailPartsTest "returns Nothing for email addresses that are not RFC compliant" splitNonRfcCompliantData
@@ -227,18 +230,19 @@ runMailPartsTest name data =
       tests =
         List.map
           (\(email, expect) ->
-            test name -- name String doubles as test name
-              (assertEqual
+            -- name String doubles as test name
+            test name <| \() ->
+              (Expect.equal
                 expect
                 (mailParts email)
               )
           ) data
     in
-      suite name tests
+      describe name tests
 
 
 encodeEmailTests =
-    suite "encodeEmail tests"
+    describe "encodeEmail tests"
       [ runEncodeEmailTest "example cases" encodeEmailExamples ]
 
 
@@ -256,7 +260,9 @@ encodeEmailExamples =
   , ( "<script>alert(\"a\")</xscript>@emaildomain.con"
     , "%3Cscript%3Ealert(\"a\")%3C/xscript%3E@emaildomain.con" )
      -- Elm 0.16 Compiler broken for </script> in string, so splitting strings.
-  , ( "<script>alert(\"a\")<" ++ "/script>@emaildomain.con", "%3Cscript%3Ealert(\"a\")%3C/script%3E@emaildomain.con" )
+  -- , ( "<script>alert(\"a\")<" ++ "/script>@emaildomain.con", "%3Cscript%3Ealert(\"a\")%3C/script%3E@emaildomain.con" )
+    -- Elm 0.18 dies bit need the split of </script> in above line.
+  , ( "<script>alert(\"a\")</script>@emaildomain.con", "%3Cscript%3Ealert(\"a\")%3C/script%3E@emaildomain.con" )
   ]
 
 
@@ -266,14 +272,16 @@ runEncodeEmailTest name data =
       tests =
         List.map
           (\(input, expect) ->
-            defaultTest
-              (assertEqual
-                expect
-                (encodeEmail input)
+            test ("Test case " ++ input)
+              ( \() ->
+                (Expect.equal
+                  expect
+                  (encodeEmail input)
+                )
               )
           ) data
     in
-      suite name tests
+      describe name tests
 
 
 suggestTests : Test
@@ -457,16 +465,16 @@ runSuggestTest name data =
             let
               (name, suggest, input, expect) =
                 case caseData of
-                  AnonSuggestCase (suggest', input', expect') ->
-                    (input', suggest', input', expect')
-                  NamedSuggestCase (name', suggest', input', expect') ->
-                    (name', suggest', input', expect')
+                  AnonSuggestCase (suggest_, input_, expect_) ->
+                    (input_, suggest_, input_, expect_)
+                  NamedSuggestCase (name_, suggest_, input_, expect_) ->
+                    (name_, suggest_, input_, expect_)
             in
-              test name
-                (assertEqual
+              test name <| \() ->
+                (Expect.equal
                   expect
                   (suggest input)
                 )
           ) data
     in
-      suite name tests
+      describe name tests
