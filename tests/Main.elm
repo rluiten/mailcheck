@@ -1,14 +1,13 @@
 port module Main exposing (..)
 
+import Tests
 import Test.Runner.Node exposing (run, TestProgram)
 import Json.Encode exposing (Value)
-
-import MailcheckTest
 
 
 main : TestProgram
 main =
-    run emit MailcheckTest.tests
+    run emit Tests.all
 
 
 port emit : ( String, Value ) -> Cmd msg

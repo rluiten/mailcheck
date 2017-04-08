@@ -109,3 +109,5 @@ License
 -------
 
 Released under the BSD3 License.
+
+(c) 2015-2017 Robin Luiten
