@@ -248,7 +248,7 @@ runMailPartsTest name data =
             List.map
                 (\( email, expect ) ->
                     -- name String doubles as test name
-                    test name <|
+                    test (name ++ email) <|
                         \() ->
                             (Expect.equal
                                 expect
@@ -458,19 +458,19 @@ suggestionData =
         , Nothing
         )
     , NamedSuggestCase
-        ( "an example used in readme"
+        ( "an example used in readme 1"
         , suggestWith [ "yohomail.com" ] [ "supamail" ] [ "cosmic" ]
         , "test@ohomail.co"
         , Just ( "test", "yohomail.com", "test@yohomail.com" )
         )
     , NamedSuggestCase
-        ( "an example used in readme"
+        ( "an example used in readme 2"
         , suggestWith [ "yohomail.com" ] [ "supamail" ] [ "cosmic" ]
         , "test@fakedomain.comic"
         , Just ( "test", "fakedomain.cosmic", "test@fakedomain.cosmic" )
         )
     , NamedSuggestCase
-        ( "an example used in readme"
+        ( "an example used in readme 3"
         , suggestWith [ "yohomail.com" ] [ "supamail" ] [ "cosmic" ]
         , "test@supermail.comic"
         , Just ( "test", "supamail.cosmic", "test@supamail.cosmic" )
