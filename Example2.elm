@@ -1,4 +1,4 @@
-module Main exposing (..)
+module Main exposing (domains, input1, input2, input3, mailcheckResult1, mailcheckResult2, mailcheckResult3, secondLevelDomains, test1Pass, test2Pass, test3Pass, topLevelDomains)
 
 import Mailcheck exposing (suggestWith)
 
@@ -51,9 +51,13 @@ test3Pass =
     mailcheckResult3 == Just ( "test", "supamail.tld", "test@supamail.tld" )
 
 
-_ =
-    Debug.log ("mailcheckResult1") ( input1, mailcheckResult1, test1Pass )
-_ =
-    Debug.log ("mailcheckResult2") ( input2, mailcheckResult2, test2Pass )
-_ =
-    Debug.log ("mailcheckResult3") ( input3, mailcheckResult3, test3Pass )
+d1 =
+    Debug.log "mailcheckResult1" ( input1, mailcheckResult1, test1Pass )
+
+
+d2 =
+    Debug.log "mailcheckResult2" ( input2, mailcheckResult2, test2Pass )
+
+
+d3 =
+    Debug.log "mailcheckResult3" ( input3, mailcheckResult3, test3Pass )

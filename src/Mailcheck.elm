@@ -1,16 +1,14 @@
-module Mailcheck
-    exposing
-        ( suggest
-        , suggestWith
-        , findClosestDomain
-        , splitEmail
-        , mailParts
-        , MailParts
-        , encodeEmail
-        , defaultDomains
-        , defaultTopLevelDomains
-        , defaultSecondLevelDomains
-        )
+module Mailcheck exposing
+    ( suggest
+    , suggestWith
+    , encodeEmail
+    , mailParts
+    , MailParts
+    , findClosestDomain
+    , defaultDomains
+    , defaultTopLevelDomains
+    , defaultSecondLevelDomains
+    )
 
 {-| A library that suggests a correct domain when a user miss spells an email address.
 This is a port of this javascript library <https://github.com/mailcheck/mailcheck>
@@ -18,15 +16,11 @@ This is a port of this javascript library <https://github.com/mailcheck/mailchec
 
 ## Basic Usage
 
-```elm
-    Mailcheck.suggest 'test@gnail.com'
-      == Just ("test", "gmail.com", "test@gmail.com")
-```
+        Mailcheck.suggest 'test@gnail.com'
+          == Just ("test", "gmail.com", "test@gmail.com")
 
-```elm
-    Mailcheck.suggest 'test@gsnail.com'
-      == Nothing
-```
+        Mailcheck.suggest 'test@gsnail.com'
+          == Nothing
 
 
 # Create
@@ -38,7 +32,6 @@ This is a port of this javascript library <https://github.com/mailcheck/mailchec
 # Utility
 
 @docs encodeEmail
-@docs splitEmail
 @docs mailParts
 @docs MailParts
 @docs findClosestDomain
@@ -50,16 +43,19 @@ This is a port of this javascript library <https://github.com/mailcheck/mailchec
 @docs defaultTopLevelDomains
 @docs defaultSecondLevelDomains
 
+(c) 2015 Robin Luiten
+
 -}
 
+import Dict
 import Http
 import Maybe
-import Regex
-import String
-import Tuple exposing (second)
-import StringDistance exposing (sift3Distance)
 import MaybeUtils exposing (thenOneOf)
-import Dict
+import Regex
+import String exposing (String)
+import StringDistance exposing (sift3Distance)
+import Tuple exposing (second)
+import Url exposing (percentEncode)
 
 
 {-| Record type alias for mailparts.
@@ -88,22 +84,16 @@ topLevelThreshold =
 in a candidate email address. This version uses the default internal lists
 of domains.
 
-```elm
-    suggest 'test@gmail.co'
-```
+        suggest 'test@gmail.co'
 
 is equivalent to
 
-```elm
-    suggestWith defaultDomains defaultSecondLevelDomains defaultTopLevelDomains 'test@gmail.co'
-```
+        suggestWith defaultDomains defaultSecondLevelDomains defaultTopLevelDomains 'test@gmail.co'
 
 example
 
-```elm
-    (suggest "user@gmil.com")
-      == Just ("user", "gmail.com", "user@gmail.com")
-```
+        (suggest "user@gmil.com")
+          == Just ("user", "gmail.com", "user@gmail.com")
 
 Result is Maybe (address, domain, secondLevelDomain, topLevelDomain)
 
@@ -141,119 +131,92 @@ suggestWith domains secondLevelDomains topLevelDomains email =
 {-| Check that secondLevelDomain and topLevelDomain are not in the accepted list of domains
 -}
 checkPartsNotInList : List String -> List String -> MailParts -> Maybe MailParts
-checkPartsNotInList secondLevelDomains topLevelDomains mailParts =
-    if not ((List.member mailParts.secondLevelDomain secondLevelDomains) && (List.member mailParts.topLevelDomain topLevelDomains)) then
-        Just mailParts
+checkPartsNotInList secondLevelDomains topLevelDomains mailPartsX =
+    if not (List.member mailPartsX.secondLevelDomain secondLevelDomains && List.member mailPartsX.topLevelDomain topLevelDomains) then
+        Just mailPartsX
+
     else
         Nothing
 
 
 closestDomain : List String -> MailParts -> Maybe ( String, String, String )
-closestDomain domains mailParts =
+closestDomain domains mailPartsX =
     let
-        closestDomain =
-            findClosestDomain mailParts.domain domains
+        closestDomainHelper =
+            findClosestDomain mailPartsX.domain domains
 
-        result closestDomain =
-            Just ( mailParts.address, closestDomain, mailParts.address ++ "@" ++ closestDomain )
+        result closestDomainVal =
+            Just ( mailPartsX.address, closestDomainVal, mailPartsX.address ++ "@" ++ closestDomainVal )
 
-        isDifferentDomain closestDomain =
-            if closestDomain == mailParts.domain then
+        isDifferentDomain closestDomainVal =
+            if closestDomainVal == mailPartsX.domain then
                 Nothing
+
             else
-                Just closestDomain
+                Just closestDomainVal
     in
-        closestDomain
-            |> Maybe.andThen isDifferentDomain
-            |> Maybe.andThen result
+    closestDomainHelper
+        |> Maybe.andThen isDifferentDomain
+        |> Maybe.andThen result
 
 
 closestSecondLevelDomain : List String -> List String -> MailParts -> Maybe ( String, String, String )
-closestSecondLevelDomain secondLevelDomains topLevelDomains mailParts =
+closestSecondLevelDomain secondLevelDomains topLevelDomains mailPartsX =
     let
         findClosest threshold domains =
             findClosestDomain domains
 
         findResultSld =
-            findClosest secondLevelThreshold mailParts.secondLevelDomain secondLevelDomains
+            findClosest secondLevelThreshold mailPartsX.secondLevelDomain secondLevelDomains
 
         findResultTld =
-            findClosest topLevelThreshold mailParts.topLevelDomain topLevelDomains
+            findClosest topLevelThreshold mailPartsX.topLevelDomain topLevelDomains
 
         suggestedDomain =
             case ( findResultSld, findResultTld ) of
                 ( Nothing, Nothing ) ->
-                    mailParts.domain
+                    mailPartsX.domain
 
                 ( Just closestSld, Nothing ) ->
-                    closestSld ++ "." ++ mailParts.topLevelDomain
+                    closestSld ++ "." ++ mailPartsX.topLevelDomain
 
                 ( Nothing, Just closestTld ) ->
-                    mailParts.secondLevelDomain ++ "." ++ closestTld
+                    mailPartsX.secondLevelDomain ++ "." ++ closestTld
 
                 ( Just closestSld, Just closestTld ) ->
                     closestSld ++ "." ++ closestTld
     in
-        if suggestedDomain == mailParts.domain then
-            Nothing
-        else
-            Just
-                ( mailParts.address
-                , suggestedDomain
-                , mailParts.address ++ "@" ++ suggestedDomain
-                )
+    if suggestedDomain == mailPartsX.domain then
+        Nothing
 
-
-{-| Split an email address up into components.
-
-This function has been retained to make it a Minor version change not a Major
-and now converts the output of mailparts to this form.
-
-```elm
-    (spitEmail "user") == Nothing
-    (mailParts "user") == Nothing
-    (spitEmail "user@") == Nothing
-    (mailParts "user@") == Nothing
-    (spitEmail "user@moo.com") == Just("user", "moo.com", "moo", "com")
-    (spitEmail "user@moo.co.uk") == Just("user", "moo.com.uk", "moo", "co.uk")
-```
-
--}
-splitEmail : String -> Maybe ( String, String, String, String )
-splitEmail email =
-    Maybe.map
-        (\parts ->
-            ( parts.topLevelDomain
-            , parts.secondLevelDomain
-            , parts.domain
-            , parts.address
+    else
+        Just
+            ( mailPartsX.address
+            , suggestedDomain
+            , mailPartsX.address ++ "@" ++ suggestedDomain
             )
-        )
-        (mailParts email)
 
 
 {-| Split an email address up into components.
 
-```elm
-    (mailParts "user") == Nothing
-    (mailParts "user@") == Nothing
-    (mailParts "user@moo.com") ==
-      Just
-      ( { topLevelDomain = "user"
-        , secondLevelDomain = "moo.com"
-        , domain = "moo"
-        , address = "com"
-        }
-      )
-    (mailParts "user@moo.co.uk") ==
-      Just
-      ( { topLevelDomain = "user"
-        , secondLevelDomain = "moo.com.uk"
-        , domain = "moo"
-        , address = "co.uk"
-        }
-      )
-```
+        (mailParts "user") == Nothing
+        (mailParts "user@") == Nothing
+        (mailParts "user@moo.com") ==
+          Just
+          ( { topLevelDomain = "user"
+            , secondLevelDomain = "moo.com"
+            , domain = "moo"
+            , address = "com"
+            }
+          )
+        (mailParts "user@moo.co.uk") ==
+          Just
+          ( { topLevelDomain = "user"
+            , secondLevelDomain = "moo.com.uk"
+            , domain = "moo"
+            , address = "co.uk"
+            }
+          )
 
 -}
 mailParts : String -> Maybe MailParts
@@ -274,20 +237,21 @@ mailParts mail =
                 |> List.reverse
                 |> String.join "@"
     in
-        if List.length mailSplit < 2 || List.member "" mailSplit then
-            Nothing
-        else
-            Just
-                { topLevelDomain = topLevelDomain domain
-                , secondLevelDomain = secondLevelDomain domain
-                , domain = domain
-                , address = address
-                }
+    if List.length mailSplit < 2 || List.member "" mailSplit then
+        Nothing
+
+    else
+        Just
+            { topLevelDomain = topLevelDomain domain
+            , secondLevelDomain = secondLevelDomain domain
+            , domain = domain
+            , address = address
+            }
 
 
 topLevelDomain : String -> String
 topLevelDomain domain =
-    case (String.split "." domain) of
+    case String.split "." domain of
         x :: [] ->
             x
 
@@ -300,7 +264,7 @@ topLevelDomain domain =
 
 secondLevelDomain : String -> String
 secondLevelDomain domain =
-    case (String.split "." domain) of
+    case String.split "." domain of
         x :: [] ->
             ""
 
@@ -410,15 +374,11 @@ defaultTopLevelDomains =
 
 {-| Find closest domain in given list of domains and threshold using default distance.
 
-```elm
-    findClosestDomain "test@gmail.co" slds tlds
-```
+        findClosestDomain "test@gmail.co" slds tlds
 
 is equivalent to
 
-```elm
-    findClosestDomainWith sift3Distance topLevelThreshold "test@gmail.co" slds tlds
-```
+        findClosestDomainWith sift3Distance topLevelThreshold "test@gmail.co" slds tlds
 
 -}
 findClosestDomain : String -> List String -> Maybe String
@@ -433,16 +393,19 @@ findClosestDomainWith : (String -> String -> Float) -> Float -> String -> List S
 findClosestDomainWith distance threshold domain domains =
     if String.isEmpty domain then
         Nothing
+
     else if List.isEmpty domains then
         Nothing
+
     else
         let
             distances =
-                List.map (\d -> ( d, (distance domain d) )) domains
+                List.map (\d -> ( d, distance domain d )) domains
 
             minDist dist_ min_ =
-                if (second dist_) < (second min_) then
+                if second dist_ < second min_ then
                     dist_
+
                 else
                     min_
 
@@ -451,12 +414,14 @@ findClosestDomainWith distance threshold domain domains =
 
             --_ = Debug.log("fcd") (domain, distances, minDomain_, minDist_)
         in
-            if String.isEmpty minDomain_ then
-                Nothing
-            else if minDist_ > threshold then
-                Nothing
-            else
-                Just minDomain_
+        if String.isEmpty minDomain_ then
+            Nothing
+
+        else if minDist_ > threshold then
+            Nothing
+
+        else
+            Just minDomain_
 
 
 encodeEmailReplacements : Dict.Dict String String
@@ -471,7 +436,7 @@ encodeEmailReplacements =
         , ( "%7C", "|" )
         , ( "%7D", "}" )
 
-        -- extra rules as using encodeURIComponent via Http.uriEncode not encodeURI
+        -- extra rules as using percentEncode does more than needed
         , ( "%40", "@" )
         , ( "%2B", "+" )
         , ( "%23", "#" )
@@ -484,12 +449,12 @@ encodeEmailReplacements =
         ]
 
 
-encodeEmailReplaceRegex : Regex.Regex
+encodeEmailReplaceRegex : Maybe.Maybe Regex.Regex
 encodeEmailReplaceRegex =
     Dict.keys encodeEmailReplacements
         |> List.intersperse "|"
         |> String.concat
-        |> Regex.regex
+        |> Regex.fromString
 
 
 {-| Encode the email address to prevent XSS but leave in valid
@@ -498,27 +463,34 @@ characters, following this official spec:
 
 This is exported to test it.
 
-encodeURI() will not encode: ~!@#$&*()=:/,;?+'
+encodeURI() will not encode: ~!@#$&\*()=:/,;?+'
 Elm's Http.uriEncode actually calls encodeURIComponent
 
 encodeURIComponent() escapes all characters except the
-following: alphabetic, decimal digits, - _ . ! ~ * ' ( )
+following: alphabetic, decimal digits, - \_ . ! ~ \* ' ( )
 
 Extra rules were added since Elm provides encodeURIComponent() functionality.
 
-```elm
-    (encodeEmail "<hello>@domain.com") == "%3Chello%3E@domain.com"
-```
+        (encodeEmail "<hello>@domain.com") == "%3Chello%3E@domain.com"
 
 -}
-encodeEmail : String -> String
+encodeEmail : String -> Maybe.Maybe String
 encodeEmail email =
-    email
-        |> Http.encodeUri
-        |> Regex.replace Regex.All
-            encodeEmailReplaceRegex
-            (\m ->
-                encodeEmailReplacements
-                    |> Dict.get m.match
-                    |> Maybe.withDefault m.match
-            )
+    case encodeEmailReplaceRegex of
+        Just regex ->
+            email
+                -- replacing encodeUri completely
+                -- |> Http.encodeUri
+                |> percentEncode
+                |> Regex.replace
+                    -- Regex.All
+                    regex
+                    (\m ->
+                        encodeEmailReplacements
+                            |> Dict.get m.match
+                            |> Maybe.withDefault m.match
+                    )
+                |> Just
+
+        Nothing ->
+            Nothing

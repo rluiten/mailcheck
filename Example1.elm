@@ -1,4 +1,4 @@
-module Main exposing (..)
+module Main exposing (input1, input2, mailcheckResult1, mailcheckResult2, test1Pass, test2Pass)
 
 import Mailcheck exposing (suggest)
 
@@ -28,7 +28,9 @@ test2Pass =
     mailcheckResult2 == Nothing
 
 
-_ =
-    Debug.log ("mailcheckResult1") ( input1, mailcheckResult1, test1Pass )
-_ =
-    Debug.log ("mailcheckResult2") ( input2, mailcheckResult2, test2Pass )
+d1 =
+    Debug.log "mailcheckResult1" ( input1, mailcheckResult1, test1Pass )
+
+
+d2 =
+    Debug.log "mailcheckResult2" ( input2, mailcheckResult2, test2Pass )

@@ -1,18 +1,18 @@
-module MailcheckTest exposing (..)
+module MailcheckTest exposing (ExpectedEncodeEmailExamples, ExpectedFindClosestDomainExamples, ExpectedSplitEmailExamples, ExpectedSuggestExamples, SuggestCase(..), domains, domainsData, encodeEmailExamples, encodeEmailTests, findClosestDomainTests, findLimitSearchRange, limitSearchStrings, mailPartsData, mailPartsInit, mailPartsTests, runEncodeEmailTest, runFindClosestDomainTest, runMailPartsTest, runSuggestTest, secondLevelDomains, secondLevelDomainsData, splitNonRfcCompliantData, splitRfcCompliantData, splitTrimsSpacesData, suggestTests, suggestionData, topLevelDomains, topLevelDomainsData)
 
 import Expect
-import String
-import Test exposing (..)
-import Tuple exposing (first)
 import Mailcheck
     exposing
-        ( findClosestDomain
-        , mailParts
-        , MailParts
+        ( MailParts
         , encodeEmail
+        , findClosestDomain
+        , mailParts
         , suggest
         , suggestWith
         )
+import String
+import Test exposing (..)
+import Tuple exposing (first)
 
 
 domains =
@@ -29,16 +29,6 @@ secondLevelDomains =
 
 type alias Mailcheck =
     Maybe ( String, String, String )
-
-
-tests : Test
-tests =
-    describe "Mailcheck tests"
-        [ encodeEmailTests
-        , mailPartsTests
-        , findClosestDomainTests
-        , suggestTests
-        ]
 
 
 findClosestDomainTests : Test
@@ -109,14 +99,13 @@ runFindClosestDomainTest : String -> ExpectedFindClosestDomainExamples -> Test
 runFindClosestDomainTest name data =
     describe name <|
         List.map
-            (\( expect, input, domains ) ->
+            (\( expect, input, domainsX ) ->
                 -- input String doubles as test name
                 test input <|
                     \() ->
-                        (Expect.equal
+                        Expect.equal
                             expect
-                            (findClosestDomain input domains)
-                        )
+                            (findClosestDomain input domainsX)
             )
             data
 
@@ -152,13 +141,13 @@ mailPartsInit address domain sld tld =
 mailPartsData : ExpectedSplitEmailExamples
 mailPartsData =
     [ ( "test@example.com"
-      , (mailPartsInit "test" "example.com" "example" "com")
+      , mailPartsInit "test" "example.com" "example" "com"
       )
     , ( "test@example.co.uk"
-      , (mailPartsInit "test" "example.co.uk" "example" "co.uk")
+      , mailPartsInit "test" "example.co.uk" "example" "co.uk"
       )
     , ( "test@mail.randomsmallcompany.co.uk"
-      , (mailPartsInit "test" "mail.randomsmallcompany.co.uk" "mail" "randomsmallcompany.co.uk")
+      , mailPartsInit "test" "mail.randomsmallcompany.co.uk" "mail" "randomsmallcompany.co.uk"
       )
     ]
 
@@ -242,22 +231,21 @@ splitTrimsSpacesData =
 
 
 runMailPartsTest : String -> ExpectedSplitEmailExamples -> Test
-runMailPartsTest name data =
+runMailPartsTest testSetName data =
     let
-        tests =
-            List.map
-                (\( email, expect ) ->
-                    -- name String doubles as test name
-                    test (name ++ email) <|
-                        \() ->
-                            (Expect.equal
-                                expect
-                                (mailParts email)
-                            )
-                )
-                data
+        testSet =
+            data
+                |> List.map
+                    (\( email, expect ) ->
+                        -- name String doubles as test name
+                        test (testSetName ++ email) <|
+                            \() ->
+                                Expect.equal
+                                    expect
+                                    (mailParts email)
+                    )
     in
-        describe name tests
+    describe testSetName testSet
 
 
 encodeEmailTests =
@@ -270,44 +258,47 @@ encodeEmailTests =
 
 
 type alias ExpectedEncodeEmailExamples =
-    List ( String, String )
+    List ( String, Maybe String )
 
 
 encodeEmailExamples : ExpectedEncodeEmailExamples
 encodeEmailExamples =
-    [ ( "hello@test.com", "hello@test.com" )
-    , ( "hello+more@test.com", "hello+more@test.com" )
-    , ( "hello+more(comment)@test.com", "hello+more(comment)@test.com" )
-    , ( "(comment)hello+more@test.com", "(comment)hello+more@test.com" )
-    , ( "a !#$%&'*+-/=?^_`{|}~\"@test.com", "a !#$%&'*+-/=?^_`{|}~\"@test.com" )
+    [ ( "hello@test.com", Just "hello@test.com" )
+
+    -- , ( "abc?@test.com", Just "mooooooo@test.com" )
+    , ( "hello+more@test.com", Just "hello+more@test.com" )
+    , ( "hello+more(comment)@test.com", Just "hello+more(comment)@test.com" )
+    , ( "(comment)hello+more@test.com", Just "(comment)hello+more@test.com" )
+    , ( "a !#$%&'*+-/=?^_`{|}~\"@test.com", Just "a !#$%&'*+-/=?^_`{|}~\"@test.com" )
     , ( "<script>alert(\"a\")</xscript>@emaildomain.con"
-      , "%3Cscript%3Ealert(\"a\")%3C/xscript%3E@emaildomain.con"
+      , Just "%3Cscript%3Ealert(\"a\")%3C/xscript%3E@emaildomain.con"
       )
 
     -- Elm 0.16 Compiler broken for </script> in string, so splitting strings.
     -- , ( "<script>alert(\"a\")<" ++ "/script>@emaildomain.con", "%3Cscript%3Ealert(\"a\")%3C/script%3E@emaildomain.con" )
     -- Elm 0.18 fixes bit does not need the split of </script> in above line.
-    , ( "<script>alert(\"a\")</script>@emaildomain.con", "%3Cscript%3Ealert(\"a\")%3C/script%3E@emaildomain.con" )
+    , ( "<script>alert(\"a\")</script>@emaildomain.con"
+      , Just "%3Cscript%3Ealert(\"a\")%3C/script%3E@emaildomain.con"
+      )
     ]
 
 
 runEncodeEmailTest : String -> ExpectedEncodeEmailExamples -> Test
-runEncodeEmailTest name data =
+runEncodeEmailTest testSetName data =
     let
-        tests =
+        testSet =
             List.map
                 (\( input, expect ) ->
                     test ("Test case " ++ input)
                         (\() ->
-                            (Expect.equal
+                            Expect.equal
                                 expect
                                 (encodeEmail input)
-                            )
                         )
                 )
                 data
     in
-        describe name tests
+    describe testSetName testSet
 
 
 suggestTests : Test
@@ -315,9 +306,24 @@ suggestTests =
     runSuggestTest "suggest cases" suggestionData
 
 
+type alias AnonSuggestCaseRecord =
+    { f : String -> Mailcheck
+    , input : String
+    , expected : Mailcheck
+    }
+
+
+type alias NamedSuggestCaseRecord =
+    { name : String
+    , f : String -> Mailcheck
+    , input : String
+    , expected : Mailcheck
+    }
+
+
 type SuggestCase
-    = AnonSuggestCase ( String -> Mailcheck, String, Mailcheck )
-    | NamedSuggestCase ( String, String -> Mailcheck, String, Mailcheck )
+    = Anon AnonSuggestCaseRecord
+    | Named NamedSuggestCaseRecord
 
 
 type alias ExpectedSuggestExamples =
@@ -326,180 +332,181 @@ type alias ExpectedSuggestExamples =
 
 suggestionData : ExpectedSuggestExamples
 suggestionData =
-    [ AnonSuggestCase
-        ( suggest
-        , "test@gmail.co"
-        , Just ( "test", "gmail.com", "test@gmail.com" )
-        )
-    , NamedSuggestCase
-        ( "takes in an array of specified domains"
-        , suggestWith domains [] []
-        , "test@emaildomain.con"
-        , Just ( "test", "emaildomain.com", "test@emaildomain.com" )
-        )
-    , NamedSuggestCase
-        ( "domain not close to any domain in default domain list test@emaildomain.con but tld found"
-        , suggest
-        , "test@emaildomain.con"
-        , Just ( "test", "emaildomain.co.nz", "test@emaildomain.co.nz" )
-        )
-    , NamedSuggestCase
-        ( "custom domain list is near to misspelled domain"
-        , suggestWith domains [] []
-        , "test@xmaildomain.con"
-        , Just ( "test", "emaildomain.com", "test@emaildomain.com" )
-        )
-    , AnonSuggestCase
-        ( suggest
-        , "contact@kicksend.com"
-        , Nothing
-        )
-    , NamedSuggestCase
-        ( "no suggestion if incomplete email provided"
-        , suggest
-        , "contact"
-        , Nothing
-        )
-    , AnonSuggestCase
-        ( suggest
-        , "test@gmailc.om"
-        , Just ( "test", "gmail.com", "test@gmail.com" )
-        )
-    , AnonSuggestCase
-        ( suggestWith domains [] []
-        , "test@emaildomain.co"
-        , Just ( "test", "emaildomain.com", "test@emaildomain.com" )
-        )
-    , AnonSuggestCase
-        ( suggestWith domains [] []
-        , "test@gnail.con"
-        , Just ( "test", "gmail.com", "test@gmail.com" )
-        )
-    , AnonSuggestCase
-        ( suggestWith domains [] []
-        , "test@gsnail.con"
-        , Nothing
-        )
-    , AnonSuggestCase
-        ( suggestWith domains [] []
-        , "test@GNAIL.con"
-        , Just ( "test", "gmail.com", "test@gmail.com" )
-        )
-    , AnonSuggestCase
-        ( suggestWith domains [] []
-        , "test@#gmail.com"
-        , Just ( "test", "gmail.com", "test@gmail.com" )
-        )
-    , AnonSuggestCase
-        ( suggestWith domains [] []
-        , "test@comcast.nry"
-        , Just ( "test", "comcast.net", "test@comcast.net" )
-        )
-    , AnonSuggestCase
-        ( suggestWith domains secondLevelDomains topLevelDomains
-        , "test@homail.con"
-        , Just ( "test", "hotmail.com", "test@hotmail.com" )
-        )
-    , AnonSuggestCase
-        ( suggestWith domains secondLevelDomains topLevelDomains
-        , "test@hotmail.co"
-        , Just ( "test", "hotmail.com", "test@hotmail.com" )
-        )
-    , AnonSuggestCase
-        ( suggestWith domains secondLevelDomains topLevelDomains
-        , "test@yajoo.com"
-        , Just ( "test", "yahoo.com", "test@yahoo.com" )
-        )
-    , AnonSuggestCase
-        ( suggestWith domains secondLevelDomains topLevelDomains
-        , "test@randomsmallcompany.cmo"
-        , Just ( "test", "randomsmallcompany.com", "test@randomsmallcompany.com" )
-        )
-    , NamedSuggestCase
-        ( "empty email address produces NoSuggestion"
-        , suggestWith domains secondLevelDomains topLevelDomains
-        , ""
-        , Nothing
-        )
-    , NamedSuggestCase
-        ( "missing email address domain produces NoSuggestion"
-        , suggestWith domains secondLevelDomains topLevelDomains
-        , "test@"
-        , Nothing
-        )
-    , NamedSuggestCase
-        ( "not @ or domain in email produces NoSuggestion"
-        , suggestWith domains secondLevelDomains topLevelDomains
-        , "test@"
-        , Nothing
-        )
-    , NamedSuggestCase
-        ( "this test is for illustrative purposes as the splitEmail function should return a better representation of the true top-level domain in the case of an email address with subdomains. mailcheck will be unable to return a suggestion in the case of this email address"
-        , suggestWith domains secondLevelDomains topLevelDomains
-        , "test@mail.randomsmallcompany.cmo"
-        , Nothing
-        )
-    , NamedSuggestCase
-        ( "will not offer a suggestion that itself leads to another suggestion"
-        , suggestWith domains secondLevelDomains topLevelDomains
-        , "test@yahooo.cmo"
-        , Just ( "test", "yahoo.com", "test@yahoo.com" )
-        )
-    , NamedSuggestCase
-        ( "will not offer suggestions for valid 2ld-tld combinations"
-        , suggestWith domains secondLevelDomains topLevelDomains
-        , "test@yahoo.co.uk"
-        , Nothing
-        )
-    , NamedSuggestCase
-        ( "will not offer suggestions for valid 2ld-tld even if theres a close fully-specified domain"
-        , suggestWith domains secondLevelDomains topLevelDomains
-        , "test@gmx.fr"
-        , Nothing
-        )
-    , NamedSuggestCase
-        ( "an example used in readme 1"
-        , suggestWith [ "yohomail.com" ] [ "supamail" ] [ "cosmic" ]
-        , "test@ohomail.co"
-        , Just ( "test", "yohomail.com", "test@yohomail.com" )
-        )
-    , NamedSuggestCase
-        ( "an example used in readme 2"
-        , suggestWith [ "yohomail.com" ] [ "supamail" ] [ "cosmic" ]
-        , "test@fakedomain.comic"
-        , Just ( "test", "fakedomain.cosmic", "test@fakedomain.cosmic" )
-        )
-    , NamedSuggestCase
-        ( "an example used in readme 3"
-        , suggestWith [ "yohomail.com" ] [ "supamail" ] [ "cosmic" ]
-        , "test@supermail.comic"
-        , Just ( "test", "supamail.cosmic", "test@supamail.cosmic" )
-        )
+    [ Anon
+        { f = suggest
+        , input = "test@gmail.co"
+        , expected = Just ( "test", "gmail.com", "test@gmail.com" )
+        }
+    , Named
+        { name = "takes in an array of specified domains"
+        , f = suggestWith domains [] []
+        , input = "test@emaildomain.con"
+        , expected = Just ( "test", "emaildomain.com", "test@emaildomain.com" )
+        }
+    , Named
+        { name = "domain not close to any domain in default domain list test@emaildomain.con but tld found"
+        , f = suggest
+        , input = "test@emaildomain.con"
+        , expected = Just ( "test", "emaildomain.co.nz", "test@emaildomain.co.nz" )
+        }
+    , Named
+        { name = "custom domain list is near to misspelled domain"
+        , f = suggestWith domains [] []
+        , input = "test@xmaildomain.con"
+        , expected = Just ( "test", "emaildomain.com", "test@emaildomain.com" )
+        }
+    , Anon
+        { f = suggest
+        , input = "contact@kicksend.com"
+        , expected = Nothing
+        }
+    , Named
+        { name = "no suggestion if incomplete email provided"
+        , f = suggest
+        , input = "contact"
+        , expected = Nothing
+        }
+    , Anon
+        { f = suggest
+        , input = "test@gmailc.om"
+        , expected = Just ( "test", "gmail.com", "test@gmail.com" )
+        }
+    , Anon
+        { f = suggestWith domains [] []
+        , input = "test@emaildomain.co"
+        , expected = Just ( "test", "emaildomain.com", "test@emaildomain.com" )
+        }
+    , Anon
+        { f = suggestWith domains [] []
+        , input = "test@gnail.con"
+        , expected = Just ( "test", "gmail.com", "test@gmail.com" )
+        }
+    , Anon
+        { f = suggestWith domains [] []
+        , input = "test@gsnail.con"
+        , expected = Nothing
+        }
+    , Anon
+        { f = suggestWith domains [] []
+        , input = "test@GNAIL.con"
+        , expected = Just ( "test", "gmail.com", "test@gmail.com" )
+        }
+    , Anon
+        { f = suggestWith domains [] []
+        , input = "test@#gmail.com"
+        , expected = Just ( "test", "gmail.com", "test@gmail.com" )
+        }
+    , Anon
+        { f = suggestWith domains [] []
+        , input = "test@comcast.nry"
+        , expected = Just ( "test", "comcast.net", "test@comcast.net" )
+        }
+    , Anon
+        { f = suggestWith domains secondLevelDomains topLevelDomains
+        , input = "test@homail.con"
+        , expected = Just ( "test", "hotmail.com", "test@hotmail.com" )
+        }
+    , Anon
+        { f = suggestWith domains secondLevelDomains topLevelDomains
+        , input = "test@hotmail.co"
+        , expected = Just ( "test", "hotmail.com", "test@hotmail.com" )
+        }
+    , Anon
+        { f = suggestWith domains secondLevelDomains topLevelDomains
+        , input = "test@yajoo.com"
+        , expected = Just ( "test", "yahoo.com", "test@yahoo.com" )
+        }
+    , Anon
+        { f = suggestWith domains secondLevelDomains topLevelDomains
+        , input = "test@randomsmallcompany.cmo"
+        , expected = Just ( "test", "randomsmallcompany.com", "test@randomsmallcompany.com" )
+        }
+    , Named
+        { name = "empty email address produces NoSuggestion"
+        , f = suggestWith domains secondLevelDomains topLevelDomains
+        , input = ""
+        , expected = Nothing
+        }
+    , Named
+        { name = "missing email address domain produces NoSuggestion"
+        , f = suggestWith domains secondLevelDomains topLevelDomains
+        , input = "test@"
+        , expected = Nothing
+        }
+    , Named
+        { name = "not @ or domain in email produces NoSuggestion"
+        , f = suggestWith domains secondLevelDomains topLevelDomains
+        , input = "test@"
+        , expected = Nothing
+        }
+    , Named
+        { name = "this test is for illustrative purposes as the splitEmail function should return a better representation of the true top-level domain in the case of an email address with subdomains. mailcheck will be unable to return a suggestion in the case of this email address"
+        , f = suggestWith domains secondLevelDomains topLevelDomains
+        , input = "test@mail.randomsmallcompany.cmo"
+        , expected = Nothing
+        }
+    , Named
+        { name = "will not offer a suggestion that itself leads to another suggestion"
+        , f = suggestWith domains secondLevelDomains topLevelDomains
+        , input = "test@yahooo.cmo"
+        , expected = Just ( "test", "yahoo.com", "test@yahoo.com" )
+        }
+    , Named
+        { name = "will not offer suggestions for valid 2ld-tld combinations"
+        , f = suggestWith domains secondLevelDomains topLevelDomains
+        , input = "test@yahoo.co.uk"
+        , expected = Nothing
+        }
+    , Named
+        { name = "will not offer suggestions for valid 2ld-tld even if theres a close fully-specified domain"
+        , f = suggestWith domains secondLevelDomains topLevelDomains
+        , input = "test@gmx.fr"
+        , expected = Nothing
+        }
+    , Named
+        { name = "an example used in readme 1"
+        , f = suggestWith [ "yohomail.com" ] [ "supamail" ] [ "cosmic" ]
+        , input = "test@ohomail.co"
+        , expected = Just ( "test", "yohomail.com", "test@yohomail.com" )
+        }
+    , Named
+        { name = "an example used in readme 2"
+        , f = suggestWith [ "yohomail.com" ] [ "supamail" ] [ "cosmic" ]
+        , input = "test@fakedomain.comic"
+        , expected = Just ( "test", "fakedomain.cosmic", "test@fakedomain.cosmic" )
+        }
+    , Named
+        { name = "an example used in readme 3"
+        , f = suggestWith [ "yohomail.com" ] [ "supamail" ] [ "cosmic" ]
+        , input = "test@supermail.comic"
+        , expected = Just ( "test", "supamail.cosmic", "test@supamail.cosmic" )
+        }
     ]
 
 
-runSuggestTest : String -> ExpectedSuggestExamples -> Test
-runSuggestTest name data =
+runSuggestTest : String -> List SuggestCase -> Test
+runSuggestTest testSetName data =
     let
-        tests =
+        testIt : String -> (String -> Mailcheck) -> String -> Mailcheck -> Test
+        testIt name suggestFunc input expected =
+            test name
+                (\() ->
+                    Expect.equal
+                        expected
+                        (suggestFunc input)
+                )
+
+        testSet : List Test
+        testSet =
             List.map
                 (\caseData ->
-                    let
-                        ( name, suggest, input, expect ) =
-                            case caseData of
-                                AnonSuggestCase ( suggest_, input_, expect_ ) ->
-                                    ( input_, suggest_, input_, expect_ )
+                    case caseData of
+                        Anon { f, input, expected } ->
+                            testIt input f input expected
 
-                                NamedSuggestCase ( name_, suggest_, input_, expect_ ) ->
-                                    ( name_, suggest_, input_, expect_ )
-                    in
-                        test name <|
-                            \() ->
-                                (Expect.equal
-                                    expect
-                                    (suggest input)
-                                )
+                        Named { name, f, input, expected } ->
+                            testIt name f input expected
                 )
                 data
     in
-        describe name tests
+    describe testSetName testSet
