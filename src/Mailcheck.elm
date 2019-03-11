@@ -48,7 +48,6 @@ This is a port of this javascript library <https://github.com/mailcheck/mailchec
 -}
 
 import Dict
-import Http
 import Maybe
 import MaybeUtils exposing (thenOneOf)
 import Regex
@@ -479,8 +478,6 @@ encodeEmail email =
     case encodeEmailReplaceRegex of
         Just regex ->
             email
-                -- replacing encodeUri completely
-                -- |> Http.encodeUri
                 |> percentEncode
                 |> Regex.replace
                     -- Regex.All
