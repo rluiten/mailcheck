@@ -463,7 +463,7 @@ characters, following this official spec:
 This is exported to test it.
 
 encodeURI() will not encode: ~!@#$&\*()=:/,;?+'
-Elm's Http.uriEncode actually calls encodeURIComponent
+Elm's Url.percentEncode actually calls encodeURIComponent
 
 encodeURIComponent() escapes all characters except the
 following: alphabetic, decimal digits, - \_ . ! ~ \* ' ( )
