@@ -321,6 +321,8 @@ defaultSecondLevelDomains =
     , "live"
     , "outlook"
     , "gmx"
+    , "gmail"
+    , "aol"
     ]
 
 
