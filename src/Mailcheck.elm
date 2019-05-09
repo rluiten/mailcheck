@@ -370,6 +370,7 @@ defaultTopLevelDomains =
     , "co.jp"
     , "sg"
     , "hu"
+    , "hk"
     ]
 
 

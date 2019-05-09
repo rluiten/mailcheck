@@ -481,6 +481,18 @@ suggestionData =
         , input = "test@supermail.comic"
         , expected = Just ( "test", "supamail.cosmic", "test@supamail.cosmic" )
         }
+    , Named
+        { name = "Test what suggestions return for input ally@gmail.com with default suggest"
+        , f = suggest
+        , input = "ally@gmail.com"
+        , expected = Nothing
+        }
+    , Named
+        { name = "Test what suggestions return for input ally@aol.com with default suggest"
+        , f = suggest
+        , input = "ally@aol.com"
+        , expected = Nothing
+        }
     ]
 
 
