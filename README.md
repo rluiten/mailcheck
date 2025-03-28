@@ -29,7 +29,7 @@ Installation
 ------------
 
 ```
-    elm package install rluiten/elm-mailcheck
+    elm install rluiten/mailcheck
 ```
 
 ## Testing
