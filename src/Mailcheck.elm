@@ -481,8 +481,8 @@ Extra rules were added since Elm provides encodeURIComponent() functionality.
 -}
 encodeEmail : String -> Maybe.Maybe String
 encodeEmail email =
-    case encodeEmailReplaceRegex of
-        Just regex ->
+    Maybe.map
+        (\regex ->
             email
                 |> percentEncode
                 |> Regex.replace
@@ -493,7 +493,5 @@ encodeEmail email =
                             |> Dict.get m.match
                             |> Maybe.withDefault m.match
                     )
-                |> Just
-
-        Nothing ->
-            Nothing
+        )
+        encodeEmailReplaceRegex
