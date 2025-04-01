@@ -67,14 +67,17 @@ type alias MailParts =
     }
 
 
+domainThreshold : number
 domainThreshold =
     2
 
 
+secondLevelThreshold : number
 secondLevelThreshold =
     2
 
 
+topLevelThreshold : number
 topLevelThreshold =
     2
 
@@ -264,7 +267,7 @@ topLevelDomain domain =
 secondLevelDomain : String -> String
 secondLevelDomain domain =
     case String.split "." domain of
-        x :: [] ->
+        _ :: [] ->
             ""
 
         x :: _ ->
