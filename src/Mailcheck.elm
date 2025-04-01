@@ -202,18 +202,18 @@ closestSecondLevelDomain secondLevelDomains topLevelDomains mailPartsX =
         (mailParts "user@") == Nothing
         (mailParts "user@moo.com") ==
           Just
-          ( { topLevelDomain = "user"
-            , secondLevelDomain = "moo.com"
-            , domain = "moo"
-            , address = "com"
+          ( { address = "user"
+            , domain = "moo.com"
+            , secondLevelDomain = "moo"
+            , topLevelDomain = "com"
             }
           )
         (mailParts "user@moo.co.uk") ==
           Just
-          ( { topLevelDomain = "user"
-            , secondLevelDomain = "moo.com.uk"
-            , domain = "moo"
-            , address = "co.uk"
+          ( { user = "user"
+            , domain = "mooco.uk"
+            , secondLevelDomain = "moo"
+            , topLevelDomain = "co.uk"
             }
           )
 
