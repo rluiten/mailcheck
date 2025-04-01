@@ -165,14 +165,11 @@ closestDomain domains mailPartsX =
 closestSecondLevelDomain : List String -> List String -> MailParts -> Maybe ( String, String, String )
 closestSecondLevelDomain secondLevelDomains topLevelDomains mailPartsX =
     let
-        findClosest threshold domains =
-            findClosestDomain domains
-
         findResultSld =
-            findClosest secondLevelThreshold mailPartsX.secondLevelDomain secondLevelDomains
+            findClosestDomainWithThreshold secondLevelThreshold mailPartsX.secondLevelDomain secondLevelDomains
 
         findResultTld =
-            findClosest topLevelThreshold mailPartsX.topLevelDomain topLevelDomains
+            findClosestDomainWithThreshold topLevelThreshold mailPartsX.topLevelDomain topLevelDomains
 
         suggestedDomain =
             case ( findResultSld, findResultTld ) of
@@ -383,12 +380,26 @@ defaultTopLevelDomains =
 
 is equivalent to
 
-        findClosestDomainWith sift3Distance topLevelThreshold "test@gmail.co" slds tlds
+        findClosestDomainWith sift3Distance domainThreshold "test@gmail.co" slds tlds
 
 -}
 findClosestDomain : String -> List String -> Maybe String
 findClosestDomain =
     findClosestDomainWith sift3Distance domainThreshold
+
+
+{-| Find closest domain in given list of domains with given threshold.
+
+        findClosestDomainWithThreshold topLevelThreshold "test@gmail.co" slds tlds
+
+is equivalent to
+
+        findClosestDomainWithThreshold sift3Distance topLevelThreshold "test@gmail.co" slds tlds
+
+-}
+findClosestDomainWithThreshold : Float -> String -> List String -> Maybe String
+findClosestDomainWithThreshold =
+    findClosestDomainWith sift3Distance
 
 
 {-| Find closest domain in given list of domains using the
