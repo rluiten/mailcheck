@@ -3,7 +3,7 @@
     "name": "rluiten/mailcheck",
     "summary": "Mailcheck suggest corrections to errors in email addresses",
     "license": "BSD-3-Clause",
-    "version": "5.0.2",
+    "version": "5.0.3",
     "exposed-modules": [
         "Mailcheck"
     ],
@@ -15,6 +15,6 @@
         "rluiten/stringdistance": "1.0.4 <= v < 2.0.0"
     },
     "test-dependencies": {
-        "elm-explorations/test": "2.2.0 <= v <= 2.2.0"
+        "elm-explorations/test": "2.2.0 <= v <= 3.0.0"
     }
 }
